@@ -1,0 +1,79 @@
+/* unoutline.aml
+/* Hugo Ahlenius, UNEP/GRID-ARendal
+/* last modified: 2001-Dec-03 16:34
+
+&ARGS inCoverage outCoverage
+&s thisFile = unoutline
+/* STANDARD BLOCK/*{{{*/
+	&ECHO &ON
+	&severity &error &routine bailout
+	&WATCH %temp%\%thisFile%.log
+	dataset disconnect connUtnes
+	&amlpath %home%/aml
+/*/*}}}*/
+&IF [NULL %inCoverage%] &THEN &GOTO USAGE
+&IF [NULL %outCoverage%] &THEN &GOTO USAGE
+&IF [EXIST %outCoverage% -cov] &THEN &GOTO USAGE
+
+build %inCoverage% line
+
+&ECHO &OFF
+	arcedit
+	edit %inCoverage% line
+	&ECHO &ON
+	editfeature line
+	aselect all
+	nselect
+	aselect LPOLY# = 1
+	aselect RPOLY# = 1
+	nselect
+	put %outCoverage%
+	quit
+
+build %outCoverage% line
+
+
+/* cleanup (proper exit)
+&CALL niceclose
+&RETURN
+
+/* USAGE
+&LABEL USAGE
+	&CALL niceclose
+	&ty
+	&ty USAGE
+	&ty Removes all outer boundaries of polygons
+	&ty UNOUTLINE inCoverage outCoverage
+&RETURN
+
+ /* SUBROUTINES BLOCK/*{{{*/
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&WATCH &OFF
+	&SEVERITY &ERROR &FAIL
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	layer remove inLayer
+	layer remove bound
+	dataset disconnect connUtnes
+	&echo &off
+	&messages &on
+	&return
+	/* Done!
+	/*}}}*/
+
+	/* In case of error, make sure that the env. is reset
+	&routine bailout
+	&call niceclose
+	&type
+	&type
+	&type
+	&return &error Bailing out of AML
+	/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+

@@ -1,0 +1,174 @@
+/* Shade image, and output as new image
+
+/* Inputs needed:
+/* strShade (shaded relief 0-255)
+/* strInImage (Colors 0-255)
+/* strOutImage (Colors 0-255)
+/* is256Color
+
+/* $Header: /config/config/aml/arc/shadeit.aml,v 1.1 2003/03/24 08:22:43 hugo Exp $
+
+/* History
+/* 2003-Jan-29 -- Created the file inspired by shimage.aml(HA)
+
+/* Hugo Ahlenius	
+/* Last Modified: 2003-Jan-29 21:10 (HA)
+
+&ARGS strShade strInImage strOutImage is256Color intInfluence
+&SETVAR strthisFile = [BEFORE %AML$FILE% '.aml']
+&IF [NULL %strShade%] OR [NULL %strInImage%] OR [NULL %strOutImage%] &THEN &RETURN Usage: %strthisFile% <shade image> <image> <outimage> {is256color} {100|influence 1-100}
+&IF [NULL %is256color%] &THEN
+	&SETVAR is256color = .FALSE.
+&ELSE
+	&SETVAR is256color = .TRUE.
+&IF [NULL %intInfluence%] &THEN &SETVAR intInfluence = 100
+&SETVAR intInfluence = [CALC %intInfluence% / 100]
+
+/* {{{ Startup
+&SETVAR doCW = .TRUE.
+&SETVAR hasWindows = .FALSE.
+&IF "[BEFORE [SHOW &OS] ,]" eq "Windows_NT" &THEN &SETVAR hasWindows = .TRUE.
+
+&SETVAR dirChar = /
+&IF %hasWindows% &THEN &SETVAR dirchar = \
+
+&RUN globalvars.aml
+
+&IF %doCW% &THEN &DO /* If run with debug args
+	/* DELETE WS IF IT EXISTS
+	&IF [EXISTS tempws_%strThisFile% -directory] &THEN rm -r -f tempws_%strThisFile%
+	/* IF IT STILL EXISTS, THEN BAILOUT
+	&IF [EXISTS tempws_%strThisFile% -directory] &THEN &DO
+		&TYPE Workspace still exists!
+		&RETURN
+	&END
+	cw tempws_%strThisFile%
+&END
+
+&SEVERITY &ERROR &ROUTINE bailout
+&SYSTEM cmd.exe /v /c timer.bat start
+&WATCH .%dirchar%%strThisFile%.log
+&ECHO &ON
+&PT &ON
+w tempws_%strThisFile%
+/* }}} 
+
+/* {{{ GLOBAL VARS
+/* }}} 
+
+/* {{{ LOCAL VARS
+/* }}} 
+
+/* ====MAIN BODY=======
+
+/* {{{ IMPORT IMAGE
+&IF %is256color% &THEN &DO
+	IMAGEGRID ..\%strInImage% color1 color1.color
+	&SYS cut -f1,2 -d" " color1.color | sed "s/ / : /" > col1r.color
+	&SYS cut -f1,3 -d" " color1.color | sed "s/ / : /" > col1g.color
+	&SYS cut -f1,4 -d" " color1.color | sed "s/ / : /" > col1b.color
+	&ECHO &OFF;GRID;&ECHO &ON
+		col1r = RECLASS(color1, col1r.color, NODATA)
+		col1g = RECLASS(color1, col1g.color, NODATA)
+		col1b = RECLASS(color1, col1b.color, NODATA)
+	QUIT
+	&END
+&ELSE &DO
+	IMAGEGRID ..\%strInImage% col1
+&END
+/* }}} 
+
+/* {{{ PREPARE SHADE
+	IMAGEGRID ..\%strShade% shade1
+	&ECHO &OFF;GRID;&ECHO &ON
+		shade2 = SLICE(shade1, EQINTERVAL, 256)
+		shade4 = int(shade2 + (256 - shade2) * %intInfluence%)
+	QUIT
+/* }}} 
+
+/* {{{ MERGE
+&ECHO &OFF;GRID;&ECHO &ON
+	col2r = CON (col1r GT 0 & shade4 GT 0,(col1r * shade4) / 256,0)
+	col2g = CON (col1g GT 0 & shade4 GT 0,(col1g * shade4) / 256,0)
+	col2b = CON (col1b GT 0 & shade4 GT 0,(col1b * shade4) / 256,0)
+QUIT
+/* }}} 
+
+/* {{{ OUTPUT
+&ECHO &OFF;GRID;&ECHO &ON
+	MAKESTACK col2 LIST col2r col2g col2b
+QUIT
+&SYS rm ..\%strOutImage%.t*
+GRIDIMAGE col2 NONE ..\%strOutImage% TIFF NONE
+/* }}} 
+
+/* ====END MAIN BODY===
+
+/* DONE!
+&SETVAR strMessageToSend = "Finished- %strThisFile%"
+&CALL message
+
+/* cleanup (proper exit)
+&CALL niceclose
+&return
+
+/* SUBROUTINES BLOCK/*{{{*/
+
+
+/* {{{ MESSAGE
+/* Sends the text in the %strMessageToSend% string
+&ROUTINE message
+	&SETVAR strSystemInfo = [extract 5 [show &os]] [extract 2 [SHOW &PT ALL]]
+	&IF %hasWindows% eq .TRUE. &THEN &DO
+		&SYSTEM net send localhost --- %strMessageToSend% %strSystemInfo%
+	&END
+	&ELSE &DO
+	&END
+&RETURN
+/* }}} 
+
+/* FINISH IT OFF NICELY/*{{{*/
+&ROUTINE niceclose
+
+	/* Just a date stamp for the log-file
+	&SYSTEM %.strDatecmd%
+
+	&ECHO &OFF
+	&MESSAGES &ON
+	&WATCH &OFF
+	&SEVERITY &ERROR &IGNORE
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	LAYER remove lyrRemoteIntPoly
+	LAYER remove lyrRemoteNatPoly
+	LAYER remove lyrLocalIntPoint
+	LAYER remove lyrLocalNatPoint
+	dataset disconnect connGRIDA
+	dataset disconnect connWCMC
+	w ..
+&return
+/*}}}*/
+
+/* In case of error, make sure that the env. is reset
+&ROUTINE bailout
+
+	&SEVERITY &ERROR &IGNORE
+
+	&SETVAR strMessageToSend = "BAILOUT- %strThisFile%"
+	&CALL message
+
+	&CALL niceclose
+	&TYPE
+	&TYPE
+	&TYPE
+&RETURN &ERROR BAILING OUT OF AML
+/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+
+
+
+

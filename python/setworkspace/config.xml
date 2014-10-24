@@ -1,0 +1,11 @@
+<ESRI.Configuration xmlns="http://schemas.esri.com/Desktop/AddIns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><Name>setworkspace</Name><AddInID>{9e1bec48-fa94-449a-a064-b531afce6ce8}</AddInID><Description>Set workspace when a document is opened in arcmap</Description><Version>0.1</Version><Image /><Author>Hugo Ahlenius, Nordpil http://nordpil.com</Author><Company>Nordpil</Company><Date>03/14/2014</Date><Targets><Target name="Desktop" version="10.2" /></Targets><AddIn language="PYTHON" library="setworkspace_addin.py" namespace="setworkspace_addin"><ArcMap>
+    <Commands>
+        </Commands>
+    <Extensions>
+        <Extension autoLoad="true" category="setworkspace" class="SetWorkspace" description="Set workspace when a document is opened in arcmap" id="setworkspace_addin.setworkspace" name="Set workspace" productName="Set workspace" showInExtensionDialog="true" />
+        </Extensions>
+    <Toolbars>
+        </Toolbars>
+    <Menus>
+        </Menus>
+    </ArcMap></AddIn></ESRI.Configuration>

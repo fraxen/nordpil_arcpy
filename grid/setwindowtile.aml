@@ -1,0 +1,29 @@
+/* Sets the window for splitting up grids into two tiles
+/* Specify one grid, and which direction (east/west)
+
+&ARGS inGrid direction
+
+&IF NOT [EXISTS %inGrid% -grid] &THEN &RETURN %inGrid% does not exist!
+&IF [NULL %direction%] &THEN &RETURN Direction not specified
+&IF "%direction%" eq "east" &THEN &SETVAR direction = e
+&IF "%direction%" eq "west" &THEN &SETVAR direction = w
+&IF NOT "%direction%" eq "e" & NOT "%direction%" eq "w" &THEN &RETURN invalid direction "%direction%"
+
+&DESCRIBE %inGrid%
+
+&IF "%direction%" EQ "e" &THEN &DO
+	/* Eastmost tile
+	&SETVAR Xmax = %GRD$XMAX%
+	&SETVAR YMax = %GRD$YMAX%
+	&SETVAR YMin = %GRD$YMIN%
+	&SETVAR Xmin = [CALC %GRD$XMIN% + %GRD$NCols% / 2 * %GRD$DX% - %GRD$DX%]
+&END; &ELSE &DO
+	/* Westmost tile
+	&SETVAR Xmin = %GRD$XMin%
+	&SETVAR YMax = %GRD$YMAX%
+	&SETVAR YMin = %GRD$YMIN%
+	&SETVAR Xmax = [CALC %GRD$XMIN% + %GRD$NCols% / 2 * %GRD$DX% + %GRD$DX%]
+&END
+
+setwindow %Xmin% %YMin% %Xmax% %YMax% %inGrid%
+&RETURN set window to [show setwindow] (xmin, ymin, xmax, ymax)

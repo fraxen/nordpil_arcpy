@@ -1,0 +1,61 @@
+&severity &error &routine bailout
+&args cover grid valueitem cellsize xmin ymin xmax ymax
+
+&call checkargs
+&call process
+
+&return
+
+/* ============================================================================
+&routine process
+
+   /* Set the precision.
+   precision double double
+
+	GRID
+		SETCELL %cellsize%
+		&if [null %xmin%] &THEN
+			SETWINDOW %cover%
+		&ELSE
+			Setwindow %xmin% %ymin% %xmax% %ymax%
+		%grid% = polygrid(%cover%,%valueitem%)
+	QUIT
+
+
+   &ty
+   &ty The grid %grid% was created from the coverage %cover%
+   &ty
+
+   &return
+
+/* ============================================================================
+&routine checkargs
+
+   &if [null %cover%] | [quote %cover%] = '#' &then &call usage
+   &if [null %grid%] | [quote %grid%] = '#' &then &call usage
+   &if [null %valueitem%] | [quote %valueitem%] = '#' &then &call usage
+   &if [null %cellsize%] | [quote %cellsize%] = '#' &then &call usage
+   &if [exist %grid% -grid] &then
+      &do
+      &s str Grid %grid% already exists ...; &call bailout
+      &end
+&return
+
+/* ============================================================================
+&routine usage
+
+   &s str Usage: &r %aml$file% <cover> <grid> <valueitem> <cellsize>
+   &return; &return &warning %str%
+
+/* ============================================================================
+&routine bailout
+
+   &severity &error &ignore
+   &severity &warning &ignore
+   &if not [variable str] &then &s str Bailing out of %aml$file%...
+   &return; &return &warning %str%
+
+/* ============================================================================
+/* END OF FILE
+/* ============================================================================
+

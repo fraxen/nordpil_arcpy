@@ -1,0 +1,252 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: FIND_ITEMS.AML
+/*   Purpose: Find all user defined items in a feature class in a list   
+/*            of coverages.  Find items have the same name but different 
+/*            definition.
+/*
+/*--------------------------------------------------------------------------
+/*     Usage: FIND_ITEMS INIT <covers_file> <ADDRESS | ARC | LINE | NODE |  
+/*                       POINT | POLYGON | REGION.subclass | ROUTE.subclass
+/*                       | SECTION.subclass | TAT.subclass | TIC> 
+/*                       <out_item_file> {out_definition_file}
+/*                       {out_different_file}      
+/*
+/* Arguments:         covers_file - ASCII list of coverages (name and path)
+/*                 (feature_class) - feature whose items will be listed
+/*                  out_item_file - output file to contain list of all possible 
+/*                                  item names in <feature_class>
+/*            out_definition_file - lists names & definitions xxxx x,x,x,x
+/*             out_different_file - list cover, item name, item definition
+/*                                  for variable definitions
+/*                                  (only created if cases found)
+/*
+/*  Routines:    INIT - check args, set up loop structure
+/*               LOOP - copy the current cover to workspace, called by 
+/*                      file_loop_aml for every cover/record in file.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*  
+/*   Globals: .find_items$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml 
+/*            file_append_file.aml
+/*            file_delete_record.aml
+/*            file_count_records.aml
+/*            file_init.aml
+/*--------------------------------------------------------------------------
+/*     Notes: 1. Does not check existence of covers. See check_exists.aml.
+/*            2. Existence of each feature class should be confirmed before
+/*            running this aml. See find_features.aml, create_classes.aml.
+/*            
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*=========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up loop structure.
+
+/* Extract args.
+&s .find_items$file = [extract 1 [unquote %arglist%]]
+&s .find_items$feat = [extract 2 [unquote %arglist%]]
+&s .find_items$outfile = [extract 3 [unquote %arglist%]]
+&s .find_items$outdeffile = [extract 4 [unquote %arglist%]]
+&s .find_items$outdifffile = [extract 5 [unquote %arglist%]]
+
+&if [null %.find_items$file%] or [null %.find_items$feat%] or ~
+ [null %.find_items$outfile%] &then
+  &call usage
+ 
+/* Make sure file list exists.
+&if not [exists %.find_items$file% -file] &then
+  &return Input file %.find_items$file% not found.
+
+/* Verify output files do not exist.
+&do file &list outfile outdeffile outdifffile
+  &if not [null [value .find_items$%file%]] &then &do
+    &if [exists [value .find_items$%file%] -file] &then
+      &return Output file [value .find_items$%file%] already exists.
+  &end
+&end
+
+/* Check that .find_items$feature class is valid. 
+&s .find_items$feat = [upcase %.find_items$feat%]
+&if %.find_items$feat% ne ADDRESS and %.find_items$feat% ne ARC and ~
+ %.find_items$feat% ne LINE and %.find_items$feat% ne ~
+ NODE and %.find_items$feat% ne POINT and %.find_items$feat% ~
+ ne POLYGON and %.find_items$feat% ne POLY and %.find_items$feat% ~
+ ne TIC &then &do
+  &if %.find_items$feat% nc REGION and %.find_items$feat% nc ROUTE ~
+   and %.find_items$feat% nc SECTION and %.find_items$feat% nc TAT &then
+    &return %.find_items$feat% is not a valid feature class.
+&end
+
+/* Check if feature contains subclass.
+&s subclass null
+&if %.find_items$feat% cn 'REGION' or %.find_items$feat% cn 'ROUTE' ~
+ or %.find_items$feat% cn 'SECTION' or %.find_items$feat% cn 'TAT' &then
+  &s subclass = [upcase [after %.find_items$feat% . ]]
+
+/* Create lists of internal items.
+&select %.find_items$feat%
+  &when POINT, POLY, POLYGON
+    &s .find_items$list = area perimeter
+  &when REGION.%subclass%
+    &s .find_items$list = area perimeter %subclass%# %subclass%-id
+  &when ARC, LINE
+    &s .find_items$list = fnode# tnode# lpoly# rpoly# length
+  &when NODE
+    &s .find_items$list = arc#
+  &when TIC
+    &s .find_items$list = idtic xtic ytic
+  &when TAT.%subclass%, ROUTE.%subclass%
+    &s .find_items$list %subclass%# %subclass%-id
+  &when SECTION.%subclass%
+    &s .find_items$list = routelink# arclink# f-meas t-meas f-pos t-pos ~
+                %subclass%# %subclass%-id 
+&end
+
+/* Create temporary output files.
+&run file_init .find_items$nameout xx [before %AML$FILE% .aml]
+&if not [null %.find_items$outdeffile%] &then
+  &run file_init .find_items$defout xx [before %AML$FILE% .aml]
+
+/* Find variable definitions checking current item def against all covers.
+&if not [null %.find_items$outdifffile%] &then &do
+  &run file_init .find_items$difffile xx find_items
+  &run file_append_record %.find_items$difffile% ~
+   [quote COVER ITEM DEFINITION]
+&end
+
+/* Loop through each record/cover add items not already found to list.
+&run file_loop_aml %.find_items$file% [quote find_items LOOP] ~
+ .find_items$record
+
+/* Rename files to user specified names.
+&s renamestat = [rename %.find_items$nameout% %.find_items$outfile%]
+&if not [null %.find_items$outdeffile%] &then &do
+  &s renamestat = [rename %.find_items$defout% %.find_items$outdeffile%]
+  &if not [null %.find_items$outdifffile%] &then &do
+    &run file_count_records init %.find_items$difffile% .find_items$diffcount
+    &if %.find_items$diffcount% gt 1 &then
+      &s renamestat = ~
+       [rename %.find_items$difffile% %.find_items$outdifffile%]
+  &end
+&end
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+/* List items of the current cover/record, if new add to output file.
+/* Build a second file to contain full item name and definition.
+&if [exists %.find_items$record% -%.find_items$feat%] &then &do
+  &s covname = [entryname %.find_items$record%]
+  &type  Finding %.find_items$feat% items in %covname%...
+  &s curfile = [scratchname -suffix [before %AML$FILE% .aml]]
+  &s tmp = ~
+   [listitem %.find_items$record% -%.find_items$feat% -all -all %curfile%]
+
+  /* Remove internal items from curfile.
+  &do item &list %.find_items$list% %covname%-id %covname%#
+    &run file_delete_record %curfile% [upcase %item%]
+  &end
+
+  /* Append unique user defined items file to final item list.
+  &run file_append_file init %.find_items$nameout% %curfile% # SEARCH
+  &if not [null %.find_items$outdeffile%] &then
+    &run file_loop_aml %curfile% [quote find_items LOOPDEF] .find_items$defrec
+  &s delstat = [delete %curfile%]
+&end
+&else &do
+  &type  %.find_items$feat% not found in %.find_items$record%
+  &call EXIT
+&end
+&return
+
+/*--------------
+&routine LOOPDEF
+/*--------------
+/* For each item in first list, find its full definition, itemname x,x,x,0
+/* and append to running list of unique item/def combinations.
+&s .find_items$itemdef = [iteminfo %.find_items$record% ~
+ -%.find_items$feat% %.find_items$defrec%]
+&s itemfull = %.find_items$defrec% %.find_items$itemdef%
+&run file_append_record %.find_items$defout% [quote %itemfull%] # SEARCH
+
+/* Find variable definitions checking current item def against all covers.
+&if not [null %.find_items$outdifffile%] &then &do
+  &run file_loop_aml %.find_items$file% [quote find_items LOOPDIFFS] ~
+   .find_items$diffrec
+&end
+
+&return
+
+/*----------------
+&routine LOOPDIFFS
+/*----------------
+/* For each item in definition file, check against all covers.
+/* IF same item exists in another cover but defined differently write both 
+/* instances of cover, item, definition to file.
+/* Cur cover: .find_items$diffrec
+/* Name %.find_items$defrec%, def %.find_items$itemdef%
+/* Item def of one that does not match current: %newdef%
+&if [iteminfo %.find_items$diffrec% -%.find_items$feat% ~
+ %.find_items$defrec% -exists] &then &do
+  &s newdef = [iteminfo %.find_items$diffrec% -%.find_items$feat% ~
+   %.find_items$defrec%]
+  &if %newdef% ne %.find_items$itemdef% &then &do
+    &type  Found variable definitions - see {out_different_file}
+    &run file_append_record %.find_items$difffile% [quote ~
+     %.find_items$diffrec% %.find_items$defrec% %.find_items$itemdef%]
+    &run file_append_record %.find_items$difffile% ~
+     [quote %.find_items$diffrec% %.find_items$defrec% %newdef%]    
+  &end
+&end
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: FIND_ITEMS INIT <covers_file> <ADDRESS | ARC | LINE | NODE |  
+&type                   POINT | POLYGON | REGION.subclass | ROUTE.subclass
+&type                   | SECTION.subclass | TAT.subclass | TIC> 
+&type                   <out_item_file> {out_definition_file}
+&type                   {out_different_file}  
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

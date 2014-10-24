@@ -1,0 +1,164 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: JCOVS3.AML
+/*   Purpose: Determine which feature classes the user wants to retain
+/*            in the joined cover.
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT   /*  {'position'} {'stripe'} {MODELESS | MODAL}
+/*-----------
+/* Initialize tool interface
+/*
+/* init user feature class list.
+&if not [variable .jcovs3$classlist] &then
+  &s .jcovs3$classlist
+
+&set position = [extract 1 [unquote %arglist%]]
+&set stripe   = [extract 2 [unquote %arglist%]]
+&set modality = [extract 3 [unquote %arglist%]]
+&if [null %position%] or %position%_ = #_ &then 
+  &set position = &cc &screen &cc
+&if [null %stripe%] or %stripe%_ = #_ &then 
+  &set stripe = JoinCovers - Step 3 of 5 - Select Feature Classes
+&if [null %modality%] or %modality%_ = #_ &then
+  &set mode =
+&else
+  &if [translate %modality%] = MODAL &then
+    &set mode = &modal
+  &else
+    &set mode = 
+/*
+/* Issue thread delete self if thread depth = 2 and input is tty 
+&if [show &thread &depth] = 2 and [extract 1 [show &thread &stack]] = tty &then
+  &set launch = &thread &delete &self 
+&else 
+  &set launch
+/*
+&if [show &thread &exists tool$jcovs3] &then
+   &thread &delete tool$jcovs3
+&s .jcovs3$freqmsg = Select a feature to show frequency.
+&if not %.jcovs2$featflag% &then 
+  &s .jcovs3$freqmsg = [unquote Features based on coverage:  ~
+   [entryname %.joincovers$firstcov%]]
+&thread &create tool$jcovs3 %mode% ~
+  &menu jcovs3 ~
+  &position [unquote %position%] ~
+  &stripe [quote [unquote %stripe%]] ~
+  &pinaction '&run jcovs3 exit'
+%launch%
+/*
+&return
+
+/*--------------
+&routine INCLUDE  /* ->
+/*--------------
+/* Move the selected available class to the include list.
+&if not [null %.jcovs3$availclasschoice%] &then &do
+  &s .jcovs3$classlist = %.jcovs3$classlist% %.jcovs3$availclasschoice%
+  &s .joincovers$availclasslist = ~
+    [unquote [subst [quote %.joincovers$availclasslist%] ~
+     %.jcovs3$availclasschoice%]]
+&end
+&return
+
+/*--------------
+&routine EXCLUDE  /* <-
+/*--------------
+/* Remove the selected available class from the include list.
+&if not [null %.jcovs3$classchoice%] &then &do
+  &s .joincovers$availclasslist %.joincovers$availclasslist% ~
+   %.jcovs3$classchoice%
+  &s .jcovs3$classlist = ~
+   [unquote [subst [quote %.jcovs3$classlist%] %.jcovs3$classchoice%]]
+&end
+&return
+
+/*------------------------
+&routine UPDATE_CLASS_FREQ
+/*------------------------
+/* Display a message showing the selected class frequency occurrence.
+/* the var .jcovs3$fromavail is set to true if the latest selection
+/* is from the available list.
+&if %.jcovs3$fromavail% &then
+  &s class = %.jcovs3$availclasschoice%
+&else
+  &s class = %.jcovs3$classchoice%
+&s curformat [show &format]
+&format 2
+&s .jcovs3$freqmsg = [unquote [format '%1% exists in %2% percent of ~
+coverages.' [upcase %class%] [value .joincovers$%class%_percent]]]
+&format %curformat%
+&if not %.jcovs2$featflag% &then 
+  &s .jcovs3$freqmsg = [unquote Features based on coverage:  ~
+   [entryname %.joincovers$firstcov%]]
+&return
+
+/*-----------
+&routine BACK
+/*-----------
+/* Go back to previous dialog.
+&s .joincovers$nextaml jcovs2 init
+&call EXIT
+&return
+
+/*-----------
+&routine NEXT
+/*-----------
+/* Evaluate user choices, show
+&if not [null %.jcovs3$classlist%] &then &do
+  &run joincovers STEP3
+  &s .joincovers$nextaml jcovs4 init
+  &call EXIT
+&end
+&else &do
+  &r msinform init [quote Include at least one feature class.]
+&end
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: JCOVS3 INIT {'''position'''} {'''stripe'''} {MODELESS | MODAL}
+&type Usage
+&return &inform 
+
+/*-------------
+&routine CANCEL
+/*-------------
+&run joincovers CANCEL
+&if %.joincovers$cancel% &then
+  &call EXIT
+&return
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+/*&dv .jcovs3$*
+&if [show &thread &exists tool$jcovs3] &then 
+  &thread &delete tool$jcovs3
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+/* &call exit
+&return &warning An error has occurred in routine: %routine% (JCOVS3.AML).
+

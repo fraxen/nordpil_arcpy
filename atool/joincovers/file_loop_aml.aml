@@ -1,0 +1,157 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: FILE_LOOP_AML.AML
+/*   Purpose: Call an AML for every record in a file.  Apply 
+/*            '&do cov &list [listfile * -cover]' functionality to output
+/*            file lists.
+/*
+/*--------------------------------------------------------------------------
+/*     Usage: FILE_LOOP_AML <file> <'aml_string'> <record_variable_name>
+/*
+/* Arguments:                 file - file containing simple list of records
+/*                      aml_string - quoted aml and arguments to call:
+/*                                    [quote amlname arg1 arg2...]
+/*            record_variable_name - the variable to hold current record
+/*                                   this variable should be used in the
+/*                                   aml set by <'aml_string'>
+/*
+/*  Routines:  CHECK_OPENSTAT - check that file was opened without error.
+/*             CHECK_READSTAT - check that file was read without error.
+/*            CHECK_CLOSESTAT - check that file was closed without error.
+/*                      USAGE - return tool usage.
+/*                       EXIT - cleanup and exit tool.
+/*                    BAILOUT - error handling.
+/*
+/*   Globals:
+/*--------------------------------------------------------------------------
+/*     Calls: <'aml_string'>
+/*--------------------------------------------------------------------------
+/*     Notes: 1. Do not include '&run' in the quoted aml string - only the  
+/*            aml and any arguments.
+/*            2. Existence of the AML is not verified.
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args file amlstring record_var
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments
+&if [null %file%] or [null %amlstring%] or [null %record_var%] &then
+  &call usage
+
+/* Verify file exist.
+&if not [exists %file% -file] &then
+  &return The file %file% does not exist.
+
+/* Open the file.
+&s [before %AML$FILE% .aml]unit = [open %file% openstat -READ]
+&call CHECK_OPENSTAT
+
+/* Call aml for every record in file.
+&s %record_var% = [read [value [before %AML$FILE% .aml]unit] readstat]
+&do &while %readstat% = 0
+  &if not [null %record_var%] &then
+    &run [unquote %amlstring%]
+  &s %record_var% = [read [value [before %AML$FILE% .aml]unit] readstat]
+&end
+&call CHECK_READSTAT
+
+/* Close the file.
+&s closestat = [close [value [before %AML$FILE% .aml]unit]]
+&call CHECK_CLOSESTAT
+
+&call EXIT
+
+&return
+
+/*---------------------
+&routine CHECK_OPENSTAT
+/*---------------------
+/* Check status variable for open function.
+&select %openstat%
+  &when 100 
+    &do
+      &type No free AML units.
+      &call BAILOUT
+    &end
+  &when 101 
+    &do
+      &type File not found.
+      &call BAILOUT
+    &end
+  &when 102 
+    &do
+      &type Couldn't open file.
+      &call BAILOUT
+    &end
+  &when 103
+    &do
+      &type Couldn't create file.
+      &call BAILOUT
+    &end
+&end
+&return
+
+/*---------------------
+&routine CHECK_READSTAT
+/*---------------------
+/* Check the value of readstat after finding (in a loop)
+/* that it is no longer equal to 0 (no longer reading records)
+&select %readstat%
+  &when 100 
+    &do
+      &type File not open for reading.
+      &call BAILOUT
+    &end
+  &when 101 
+    &do
+      &type Error during read.
+      &call BAILOUT
+    &end
+  &when 103
+    &do
+      &type Unable to reopen file (file closed between ARC programs).
+      &call BAILOUT
+    &end
+  &when 104
+    &do
+      &type String truncated to 1,024 characters.
+      &call BAILOUT
+    &end
+&return
+
+/*----------------------
+&routine CHECK_CLOSESTAT
+/*----------------------
+/* Check that a file was closed
+&if %closestat% ne 0 &then
+  &type FILE CLOSE ERROR %closestat%.
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: FILE_LOOP_AML <file> <'aml_string'> <record_variable_name>
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return
+
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit  /* Comment out later?
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

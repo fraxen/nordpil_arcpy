@@ -1,0 +1,95 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: FILE_COUNT_RECORDS.AML
+/*   Purpose: Count all non-blank records in a file.
+/*
+/*--------------------------------------------------------------------------
+/*     Usage: FILE_COUNT_RECORDS INIT <file> <variable_name>
+/*
+/* Arguments:          file - the file containing records to count 
+/*            variable_name - variable to hold number of records
+/*
+/*  Routines:    INIT - check args, set up loop
+/*               LOOP - increment the count, called from file_loop_aml
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling.        
+/*
+/*   Globals: .file_count_records$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml
+/*--------------------------------------------------------------------------
+/*     Notes:
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+
+/* Extract args.
+&s file = [extract 1 [unquote %arglist%]]
+&s .file_count_records$var = [extract 2 [unquote %arglist%]]
+
+/* Check args.
+&if [null %file%] or [null %.file_count_records$var%] &then
+  &call usage
+
+/* Verify file exist.
+&if not [exists %file% -file] &then
+  &return The file %file% does not exist.
+
+&s %.file_count_records$var% = 0
+
+&run file_loop_aml %file% [quote file_count_records LOOP] ~
+  .file_count_records$looprecord
+
+/* &type  [value %.file_count_records$var%] records in %file%
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+&s %.file_count_records$var% = [value %.file_count_records$var%] + 1
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: FILE_COUNT_RECORDS INIT <file> <variable_name>
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit  /* Comment out later?
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

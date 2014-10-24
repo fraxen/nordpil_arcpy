@@ -1,0 +1,83 @@
+/* gridshade.aml
+/* Hugo Ahlenius, UNEP/GRID-Arendal
+/* Last Modified: 2003-Jun-03 12:11 (HA)
+
+&ARGS gridStart imageOut zFactor
+&IF %:program% <> ARC &then &GOTO Usage
+&SETVAR thisFile = boxit
+/* STANDARD BLOCK/*{{{*/
+	&SEVERITY &ERROR &ROUTINE bailout
+	&WATCH %temp%\%thisFile%.log
+	&amlpath %home%/aml
+/*/*}}}*/
+&IF [NULL %gridStart%] OR [NULL %imageOut%] &THEN &GOTO USAGE
+&IF [NULL %zFactor%] &THEN &SETVAR zFactor = 10
+
+&IF [EXISTS temp -workspace] &THEN rm -r -f temp
+cw temp
+w temp
+
+/* {{{ PERFORM SHADE
+HILLSHADE ..\%gridStart% shade1 # # # %zFactor%
+GRID
+	shade2 = slice(shade1, eqinterval, 255)
+	shade3 = con(isnull(shade2), 0, shade2)
+QUIT
+/* }}} 
+
+/* {{{ CREATE HILLSHADE COLORMAP
+GRID
+	shadecolorramp 1 255 rgb 0 0 0 rgb 255 255 255
+	savecolormap hillshade.color
+QUIT
+&SYSTEM ECHO 0 255 0 255 >> hillshade.color
+/* }}} 
+
+/* Export image
+GRIDIMAGE shade3 hillshade.color ..\%imageOut% bmp none
+
+
+/* cleanup (proper exit)
+&CALL niceclose
+&RETURN
+
+/* USAGE
+&LABEL USAGE
+	&WATCH &OFF
+	&ty
+	&ty USAGE
+	&ty gridshade <in_lattice> <out_image> {z_factor}
+&RETURN
+
+ /* SUBROUTINES BLOCK/*{{{*/
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&WATCH &OFF
+	&SEVERITY &ERROR &FAIL
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	w ..
+	layer remove inLayer
+	layer remove bound
+	dataset disconnect connUtnes
+	&echo &off
+	&messages &on
+	&return
+	/* Done!
+	/*}}}*/
+
+	/* In case of error, make sure that the env. is reset
+	&routine bailout
+	&call niceclose
+	&type
+	&type
+	&type
+	&return &error Bailing out of AML
+	/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+

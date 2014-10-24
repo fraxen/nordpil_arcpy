@@ -1,0 +1,172 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: JCOVS1.AML
+/*   Purpose: Build a list of coverages to use in APPEND.
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT   /*  {'position'} {'stripe'} {MODELESS | MODAL}
+/*-----------
+
+&if not [variable .jcovs1$filelist] &then
+  &run file_init .jcovs1$filelist xx [before %AML$FILE% .aml]
+
+/* Initialize tool interface
+/*
+&set position = [extract 1 [unquote %arglist%]]
+&set stripe   = [extract 2 [unquote %arglist%]]
+&set modality = [extract 3 [unquote %arglist%]]
+&if [null %position%] or %position%_ = #_ &then 
+  &set position = &cc &screen &cc
+&if [null %stripe%] or %stripe%_ = #_ &then 
+  &set stripe = JoinCovers - Step 1 of 5 - Select Coverages 
+&if [null %modality%] or %modality%_ = #_ &then
+  &set mode =
+&else
+  &if [translate %modality%] = MODAL &then
+    &set mode = &modal
+  &else
+    &set mode = 
+/*
+/* Issue thread delete self if thread depth = 2 and input is tty 
+&if [show &thread &depth] = 2 and [extract 1 [show &thread &stack]] = tty &then
+  &set launch = &thread &delete &self 
+&else 
+  &set launch
+/*
+&if [show &thread &exists tool$jcovs1] &then
+   &thread &delete tool$jcovs1
+&thread &create tool$jcovs1 %mode% ~
+  &menu jcovs1 ~
+  &position [unquote %position%] ~
+  &stripe [quote [unquote %stripe%]] ~
+  &pinaction '&run jcovs1 exit'
+%launch%
+/*
+&return
+
+/*--------------
+&routine AUTOADD
+/*--------------
+/* If first time, auto start ADD dialog.
+&if [variable .joincovers$start] &then &do
+  &if %.joincovers$start% &then &do
+    &call ADD
+    &s .joincovers$start .false.
+  &end
+&end
+&return
+
+/*----------
+&routine ADD
+/*----------
+/* Open the add form to return a list of coverages.
+&run jcovs1a init # # modal
+&call UPDATE_TOTAL
+&return
+
+/*-------------
+&routine REMOVE
+/*-------------
+/* Remove the selected cover from the file list.
+&run file_delete_record %.jcovs1$filelist% %.jcovs1$curcover%
+&call UPDATE_TOTAL
+&return
+
+/*-------------------
+&routine UPDATE_TOTAL
+/*-------------------
+/* Calculate the number of covers when the Add dialog is used.
+&run file_count_records init %.jcovs1$filelist% .jcovs1$totalcovs
+&return
+
+/*----------------
+&routine SAVE_LIST
+/*----------------
+/* Save the current coverage list as a text file.
+&run savefileas init cov_list.txt .jcovs1$savefile ASCII # ~
+ 'Save Coverage List...'
+&if not [null %.jcovs1$savefile%] &then
+  &s copystat [copy %.jcovs1$filelist% %.jcovs1$savefile% -file]
+&if [exists %.jcovs1$savefile% -file] &then
+  &type  Saved coverage list to %.jcovs1$savefile%
+&else
+  &type  Coverage list not saved
+
+&return
+
+/*----------------
+&routine LOAD_LIST
+/*----------------
+&r getfile init .jcovs1$loadfile
+&if not [null %.jcovs1$loadfile%] &then
+  &s .jcovs1$filelist %.jcovs1$loadfile%
+&return
+
+
+/*-----------
+&routine NEXT
+/*-----------
+/* Call joincovers to check the coverages.  
+/* Stop if needed or continue to next dialog.
+/* Check if user choices okay.
+&if %.jcovs1$totalcovs% ge 2 and %.jcovs1$totalcovs% le 500 &then &do
+  &r joincovers STEP1
+  &s .joincovers$nextaml jcovs2 init
+  &call EXIT
+&end
+&else &do
+  &if %.jcovs1$totalcovs% lt 2 &then
+    &r msinform init [quote This tool requires at least two coverages.] ~ 
+     [quote Click ADD to select coverages.]
+  &if %.jcovs1$totalcovs% gt 500 &then
+    &run msinform init [quote APPEND can only handle 500 coverages.] ~ 
+     [quote Run JoinCovers multiple times.]
+&end
+
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: JCOVS1 INIT {'''position'''} {'''stripe'''} {MODELESS | MODAL}
+&return &inform 
+
+/*-------------
+&routine CANCEL
+/*-------------
+&run joincovers CANCEL
+&if %.joincovers$cancel% &then
+  &call EXIT
+&return
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+/*&dv .jcovs1$*
+&if [show &thread &exists tool$jcovs1] &then 
+  &thread &delete tool$jcovs1
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+/* &call exit
+&return &warning An error has occurred in routine: %routine% (JCOVS1.AML).
+

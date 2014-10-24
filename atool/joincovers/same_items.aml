@@ -1,0 +1,259 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: SAME_ITEMS.AML
+/*   Purpose: Make all coverages in an ASCII list similar by adding and 
+/*            pulling items defined by either searching for all possible 
+/*            items or from an existing item list. Apply add_items.aml 
+/*            and pull_items.aml to a file list of coverages.
+/*
+/*--------------------------------------------------------------------------
+/*     Usage: SAME_ITEMS INIT <covers_file> <FIND | USE> <items_file>   
+/*                       <ADDRESS | ARC | LINE | NODE | POINT | POLYGON |      
+/*                       REGION.subclass | ROUTE.subclass | 
+/*                       SECTION.subclass | TAT.subclass | TIC>   
+/*                       {BOTH | ADD | PULL} {out_different_file}
+/*
+/* Arguments:         covers_file - ASCII list of coverages
+/*                           FIND - finds all possible items in all covers
+/*                            USE - Uses only items defined in <item_file>
+/*                     items_file - When 'FIND' is used:
+/*                                    OUTPUT file to contain list of all  
+/*                                    possible item names in feature_class
+/*                                - When 'USE' is used:
+/*                                    INPUT file with items and defs
+/*                                    xxxx x,x,x,x
+/*                (feature_class) - feature class to define table
+/*                           BOTH - items will be added and pulled
+/*                            ADD - items will be added, NOT pulled
+/*                           PULL - items will NOT be added, only pulled
+/*                                  (may crash if items don't exist)
+/*             out_different_file - When 'FIND' is used:
+/*                                  list cover, item name, item definition
+/*                                    for variable definition cases
+/*                                    (only created if some cases found)
+/*                                  Ignored when 'USE' is used.
+/* 
+/*  Routines:    INIT - check args, set up loop structure
+/*               LOOP - copy the current cover to workspace, called by 
+/*                      file_loop_aml for every cover/record in file.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*  
+/*   Globals: .same_items$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml
+/*            add_items.aml
+/*            find_items.aml
+/*            pull_items.aml
+/*            file_init.aml
+/*--------------------------------------------------------------------------
+/*     Notes: Item list must be in form 'itemname x,x,x,0.'
+/*            Does not check the existence of covers, see check_exists.aml.
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up loop structure.
+
+/* Check program
+&if [show program] ne ARC &then
+  &return Run [before %AML$FILE% .aml] from ARC.
+
+/* Extract args.
+&s file = [extract 1 [unquote %arglist%]]
+&s .same_items$source = [upcase [extract 2 [unquote %arglist%]]]
+&s .same_items$def_file = [extract 3 [unquote %arglist%]]
+&s .same_items$feat = [extract 4 [unquote %arglist%]]
+&s .same_items$mode = [upcase [extract 5 [unquote %arglist%]]]
+&s .same_items$diff_file = [extract 6 [unquote %arglist%]]
+
+&if [null %file%] or [null %.same_items$source%] or ~
+ [null %.same_items$def_file%] or [null %.same_items$feat%] &then
+  &call usage
+&if not [null %.same_items$source%] &then &do
+    &if %.same_items$source% ne FIND and %.same_items$source% ne USE &then
+      &call usage
+&end
+&if not [null %.same_items$mode%] &then &do
+  &if %.same_items$mode% ne BOTH and %.same_items$mode% ne ADD and ~
+   %.same_items$mode% ne PULL &theN
+    &call usage
+&end
+&else
+  &s .same_items$mode = BOTH
+
+/* Make sure cover list exists.
+&if not [exists %file% -file] &then
+  &return Input file %file% not found.
+
+&if %.same_items$source% = FIND &then &do
+  &if [exists %.same_items$def_file% -file] &then
+    &return Output file %.same_items$def_file% already exists.
+&end
+&if %.same_items$source% = USE &then &do
+  &if not [exists %.same_items$def_file% -file] &then
+    &return Input file %.same_items$def_file% does not exist.
+&end
+
+/* Make sure output file does not exist
+&if not [null %.same_items$diff_file%] &then &do
+  &if [exists %.same_items$diff_file% -file] &then
+    &return Output file %.same_items$diff_file% already exists.
+&end
+
+/* Check that .same_items$feat class is valid.
+&s .same_items$feat = [upcase %.same_items$feat%]
+&if %.same_items$feat% ne ADDRESS and %.same_items$feat% ne ARC and~
+ %.same_items$feat% ne LINE and %.same_items$feat% ne ~
+ NODE and %.same_items$feat% ne POINT and %.same_items$feat% ~
+  ne POLYGON and %.same_items$feat% ne POLY and %.same_items$feat%~
+   ne TIC &then &do
+  &if %.same_items$feat% nc 'REGION' and %.same_items$feat% nc 'ROUTE'~
+   and %.same_items$feat% nc 'SECTION' and ~
+   %.same_items$feat% nc 'TAT' &then
+    &return %.same_items$feat% is not a valid feature class.
+&end
+
+/* Check if feature contains subclass.
+&s subclass null
+&if %.same_items$feat% cn 'REGION' or %.same_items$feat% cn 'ROUTE' ~
+ or %.same_items$feat% cn 'SECTION' or %.same_items$feat% cn 'TAT' &then &do
+  &s subclass = [upcase [after %.same_items$feat% . ]]
+  &if [null %subclass%] &then
+    &s subclass = -
+&end
+
+/* Convert feature class to info file extension.
+&select %.same_items$feat%
+  &when TIC
+    &s .same_items$fat tic
+  &when LINE,ARC
+    &s .same_items$fat aat
+  &when NODE
+    &s .same_items$fat nat
+  &when POLYGON,POLY,POINT
+    &s .same_items$fat pat
+&end
+&if %.same_items$feat% cn 'REGION' &then
+  &s .same_items$fat pat%subclass%
+&if %.same_items$feat% cn 'ROUTE' &then
+  &s .same_items$fat rat%subclass%
+&if %.same_items$feat% cn 'SECTION' &then
+  &s .same_items$fat sec%subclass%
+&if %.same_items$feat% cn 'TAT' &then
+  &s .same_items$fat tat%subclass%
+
+&if %.same_items$source% = FIND &then &do
+
+  /* Find all user defined items.
+  /* Create scratch names and files.
+  &do afile &list .same_items$itemout .same_items$deffout .same_items$diffout
+    &run file_init %afile% xx [before %AML$FILE% .aml]
+  &end
+  
+  /* Delete files, leave vars.
+  &do afile &list .same_items$itemout .same_items$deffout .same_items$diffout
+    &s delstat [delete [value %afile%]]
+  &end  
+  &run find_items init %file% %.same_items$feat% %.same_items$itemout% ~
+   %.same_items$deffout% %.same_items$diffout%
+     
+  /* Check if different file created, quit.
+  &if [exists %.same_items$diffout% -file] &then &do
+    &s renamestat = [rename %.same_items$diffout% %.same_items$diff_file%]
+    &s renamestat = [rename %.same_items$deffout% %.same_items$def_file%]
+    &return Can not continue.  Fix variable item definitions.
+  &end
+&end
+
+&else &do  /* source = USE,   /* Create item only file.
+  &run file_init .same_items$itemout xx [before %AML$FILE% .aml]
+  &s .same_items$deffout = %.same_items$def_file%
+  &run file_loop_aml %.same_items$deffout% [quote same_items USELOOP] ~
+   .same_items$userec
+&end
+
+/* Loop through each record/cover to add & pull items.
+&run file_loop_aml %file% [quote same_items LOOP] .same_items$record
+
+/* Rename files to user specified names.
+&if %.same_items$source% = FIND &then
+  &s renamestat = [rename %.same_items$deffout% %.same_items$def_file%]
+&if [exists %.same_items$diff_file% -file] &then
+  &s renamestat = [rename %.same_items$diffout% %.same_items$diff_file%]
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+/* Call additems and pullitems.
+&s curinfo = %.same_items$record%.%.same_items$fat%
+&if %.same_items$mode% = BOTH &then &do
+  &run add_items init %curinfo% %.same_items$deffout%
+  &run pull_items init %curinfo% %.same_items$itemout%
+&end
+&if %.same_items$mode% = ADD &then &do
+  &run add_items init %curinfo% %.same_items$deffout%
+&end
+&if %.same_items$mode% = PULL &then &do
+  &run pull_items init %curinfo% %.same_items$itemout%
+&end
+
+&return
+
+/*--------------
+&routine USELOOP
+/*--------------
+&run file_init %.same_items$itemout% xx [before %AML$FILE% .aml]
+&s itemname = [before %.same_items$userec% ' ']
+&run file_append_record %.same_items$itemout% %itemname%
+&return
+
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: SAME_ITEMS INIT <covers_file> <FIND | USE> <items_file>   
+&type                   <ADDRESS | ARC | LINE | NODE | POINT | POLYGON |      
+&type                   REGION.subclass | ROUTE.subclass | 
+&type                   SECTION.subclass | TAT.subclass | TIC>   
+&type                   {BOTH | ADD | PULL} {out_different_file}
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

@@ -1,0 +1,19 @@
+/* {{{ COMMENTS
+/* w.aml
+/* Hugo Ahlenius, UNEP/GRID-ARendal
+/*
+/* I execute the dir command through arc
+/*
+/* HISTORY
+/* $Log: w.aml,v $
+/* Revision 1.1  2004/08/20 07:14:03  ahlenius
+/* no message
+/*
+/* }}} 
+
+&ARGS arg1
+
+&IF [NULL %arg1%] &THEN
+	arc w
+&ELSE
+	arc w %arg1%

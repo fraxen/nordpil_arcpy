@@ -1,0 +1,144 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: FILE_APPEND_FILE.AML
+/*   Purpose: Append a file to another file. 
+/*
+/*--------------------------------------------------------------------------
+/*     Usage: FILE_APPEND_FILE INIT <file> <append_file> {out_file}  
+/*                             {NOSEARCH | SEARCH} {variable_name}
+/*
+/* Arguments:          file - the base file 
+/*              append_file - the file to append to <file> or {out_file}
+/*                 out_file - original file will not be modified
+/*                 NOSEARCH - appends all records in new file
+/*                   SEARCH - only records that do not already exist in
+/*                            <file> will be appended.
+/*            variable_name - variable used with SEARCH option
+/*                            true -> one or more records not added
+/*                            false -> all records added, no duplicates
+/*
+/*  Routines:    INIT - check args, setup loop
+/*               LOOP - append the current record, called by file_loop_aml
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling.
+/*
+/*   Globals: .file_append_file$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_append_record.aml
+/*            file_loop_aml.aml
+/*            
+/*--------------------------------------------------------------------------
+/*     Notes:
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+
+/* Extract args.
+&s file = [extract 1 [unquote %arglist%]]
+&s append_file = [extract 2 [unquote %arglist%]]
+&s out_file = [extract 3 [unquote %arglist%]]
+&s .file_append_file$searchop = [extract 4 [unquote %arglist%]]
+&s .file_append_file$var = [extract 5 [unquote %arglist%]]
+
+/* Check arguments
+&if [null %file%] or [null %append_file%] &then
+  &call usage
+&if not [null %.file_append_file$searchop%] &then &do
+  &if [upcase %.file_append_file$searchop%] ne NOSEARCH and ~
+   [upcase %.file_append_file$searchop%] ne SEARCH ~
+  and %.file_append_file$searchop%_ ne #_ &then
+    &call USAGE
+&end
+&else
+  &s .file_append_file$searchop NOSEARCH
+
+/* Check variable_name when SEARCH
+&if [upcase %.file_append_file$searchop%] = SEARCH &then &do
+  &if not [null %.file_append_file$var%] &then &do
+    &if %.file_append_file$var%_ = #_ &then
+      &s .file_append_file$var = .file_append_file$trash
+  &end
+  &else
+    &s .file_append_file$var = .file_append_file$trash    
+&end
+
+/* Verify file exist.
+&do afile &list %file% %append_file%
+  &if not [exists %afile% -file] &then
+    &return The file %afile% does not exist.
+&end
+
+/* Verify output file does not exist.
+&if not [null %out_file%] &then &do
+  &if %out_file%_ ne #_ &then &do
+    &if [exists %out_file% -file] &then
+      &return Output file %out_file% already exists.
+  &end
+&end
+
+/* Create output file if needed.
+&s .file_append_file$target %file%
+&if not [null %out_file%] &then &do
+  &if %out_file%_ ne #_ &then &do
+    &s copystat [copy %file% %out_file% -file]
+    &s .file_append_file$target %out_file%
+  &end
+&end
+
+&run file_loop_aml %append_file% [quote file_append_file LOOP] ~
+  .file_append_file$looprecord
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+&run file_append_record %.file_append_file$target% ~
+ %.file_append_file$looprecord% # %.file_append_file$searchop% ~
+  %.file_append_file$var%
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: FILE_APPEND_FILE INIT <file> <append_file> {out_file}  
+&type                         {NOSEARCH | SEARCH} {variable_name}
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit  /* Comment out later?
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

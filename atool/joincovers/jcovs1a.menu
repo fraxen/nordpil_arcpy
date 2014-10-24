@@ -1,0 +1,55 @@
+7 jcovs1a.menu
+/* ---------------------------------------------------------------------------
+/*          JOINCOVERS - Geomatics Senior Project - University of Florida
+/* ---------------------------------------------------------------------------
+/*    Menu: JCOVS1A.MENU
+/* Purpose: jcovs1a tool interface.
+/* ---------------------------------------------------------------------------
+/* History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/* ===========================================================================
+  Add method:
+  %datalist1                     %butto0
+
+
+
+
+  %display2
+  %datalist0
+
+
+
+
+
+
+
+
+
+  %display4                   %edi1
+
+
+
+    %but1      %b2
+%datalist1 INPUT .JCOVS1A$ADDMETHOD 28 TYPEIN NO SCROLL YES ROWS 4 ~
+  RETURN '&run jcovs1a UPDATE_LIST' ~
+  CHOICE ~
+  -PAIRS 'All in workspace' all 'Single cover' selected 'ASCII file list' file -VAR .jcovs1a$shortmethod -NOSORT
+%butto0 BUTTON KEEP ~
+  HELP 'Search file system' ~
+  'Browse...' &r jcovs1a BROWSE
+%display2 DISPLAY .jcovs1a$availstring 32 VALUE
+%datalist0 INPUT .JCOVS1A$CURRENT 44 TYPEIN NO SCROLL YES ROWS 8 CHOICE ~
+  -FILE %.jcovs1a$filelist% -DISPLAY 1 -NOSORT
+%display4 DISPLAY .jcovs1a$showstring 22 VALUE
+%edi1 INPUT .JCOVS1A$SPEC 12 TYPEIN YES SCROLL NO ~
+  KEEP ~
+  HELP 'File name specification' ~
+  INITIAL '*' ~
+  RETURN '&r jcovs1a UPDATE_LIST' ~
+  CHARACTER
+%but1 BUTTON KEEP ~
+  HELP 'Evaluate choices and add coverages to list' ~
+  'OK' &run jcovs1a OK
+%b2 BUTTON CANCEL ~
+  HELP 'Quit from this menu' ~
+  'Cancel' &run jcovs1a EXIT
+%FORMOPT SETVARIABLES IMMEDIATE NEXTFIELD ADVANCE MESSAGEVARIABLE .jcovs1a$msg

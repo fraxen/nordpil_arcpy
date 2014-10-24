@@ -1,0 +1,64 @@
+/* listsde.aml
+/* Hugo Ahlenius
+/* last modified: 2002-Sep-01 12:54 (HA)
+
+&ARGS inDatabase
+&s thisFile = listsde
+/* STANDARD BLOCK/*{{{*/
+	&ECHO &OFF
+	&severity &error &routine bailout
+	&WATCH %temp%/%thisFile%.log
+	dataset disconnect connUtnes
+	&amlpath %home%/aml
+/*/*}}}*/
+&IF [NULL %inDatabase%] &THEN &s inDatabase = sde_world_geo
+
+dataset connect connUtnes utnes.grida.no 5151 %inDatabase% CinderCone %inDatabase%
+dataset listlayers connUtnes
+
+
+
+
+
+/* cleanup (proper exit)
+&CALL niceclose
+&RETURN
+
+/* USAGE
+&LABEL USAGE
+	&CALL niceclose
+	&ty
+	&ty USAGE
+	&ty LOADSDE <create | append> {Database/User} <coverage> {class}
+&RETURN
+
+ /* SUBROUTINES BLOCK/*{{{*/
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&WATCH &OFF
+	&SEVERITY &ERROR &FAIL
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	layer remove inLayer
+	dataset disconnect connUtnes
+	&echo &off
+	&messages &on
+	&return
+	/* Done!
+	/*}}}*/
+
+	/* In case of error, make sure that the env. is reset
+	&routine bailout
+	&call niceclose
+	&type
+	&type
+	&type
+	&return &error Bailing out of AML
+	/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+

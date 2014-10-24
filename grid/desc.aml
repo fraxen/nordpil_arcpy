@@ -1,0 +1,19 @@
+/* {{{ COMMENTS
+/* desc.aml
+/* Hugo Ahlenius, UNEP/GRID-ARendal
+/*
+/* I execute the describe command through arc
+/*
+/* HISTORY
+/* $Log: desc.aml,v $
+/* Revision 1.1  2004/08/20 07:14:03  ahlenius
+/* no message
+/*
+/* }}} 
+
+&ARGS arg1
+
+&IF [NULL %arg1%] &THEN
+	&TYPE USAGE: DESC <geo_dataset>
+&ELSE
+	arc describe %arg1%

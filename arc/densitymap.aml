@@ -1,0 +1,176 @@
+/* Create a grid with densities and export that to SDE and as an image
+
+&SETVAR thisFile = densitymap
+
+/* {{{ DEBUG ARGS
+	&SETVAR doCW = .TRUE.
+/* }}} 
+
+/* {{{ Startup
+&ECHO &ON
+
+&PT &ON
+
+&SEVERITY &ERROR &ROUTINE bailout
+
+&SETVAR hasWindows = .FALSE.
+&IF "[BEFORE [SHOW &OS] ,]" eq "Windows_NT" &THEN &SETVAR hasWindows = .TRUE.
+
+&IF %hasWindows% &THEN &DO
+	/* Set it up like this if running on Windows
+	&SETVAR dirchar = \
+	&SETVAR dirTemp = %temp%\
+	&SETVAR strDatecmd = date /t
+	&WATCH %dirTemp%%thisFile%.log
+	&END
+&ELSE &DO
+	/* ...and like this if it is running on Solaris
+	&SETVAR dirTemp = ./
+	&SETVAR dirChar = /
+	&SETVAR strDatecmd = date
+	&WATCH ~/%thisFile%.log
+	w /tmp
+&END
+
+/* Just a date stamp for the log-file
+&SYSTEM %strDatecmd%
+
+&IF %doCW% &THEN &DO /* If run with debug args
+	&if [EXISTS tempws_densitymap -workspace] &THEN rm -r -f tempws_densitymap
+	cw tempws_densitymap
+&END
+w tempws_densitymap
+
+/* }}} 
+
+/* {{{ CLEAN UP OLD STUFF
+&IF [EXISTS density1 -grid] &THEN KILL density1
+&IF [EXISTS density2 -grid] &THEN KILL density2
+&IF [EXISTS density3 -grid] &THEN KILL density3
+&IF [EXISTS density4.bmp -file] &THEN &SYSTEM del density4.*
+&IF [EXISTS density3.color -file] &THEN &SYSTEM del density3.color
+&IF [EXISTS density5 -cover] &THEN KILL density5
+&IF [EXISTS boxes.aml -file] &THEN &SYSTEM del boxes.aml
+&IF [EXISTS density2.remap -info] &THEN killinfo density2.remap
+DATASET disconnect connGRIDA
+LAYER remove boxes
+/* }}} 
+
+&SYSTEM wget --tries=3 --timeout=30 -nv -o nullfile -O - "http://maps.dw.grida.no/?event=densityboxes" > boxes.aml
+DATASET connect connGRIDA utnes.grida.no 5151 sde_world_geo CinderCone sde_world_geo
+
+&ECHO &OFF; GRID; &ECHO &ON
+	SETCELL 0.5
+	SETWINDOW -180 -90 180 90
+	density1 = 0
+	&RUN boxes.aml
+	SETWINDOW -180 -90 180 90
+	density2 = SETNULL(density1 == 0, density1)
+	CREATEREMAP density2 density2.remap EQAREA 10 1 INFO
+	density3 = SLICE(density2, TABLE, density2.remap)
+	density4 = CON(ISNULL(density3),99,density3)
+	SHADECOLORRAMP 1 10 RGB 255 120 47 RGB 55 19 0
+	SHADECOLORRAMP 99 1 RGB 255 0 255 RGB 255 0 255
+	&ECHO &OFF; SAVECOLORMAP density4.color; &ECHO &ON
+QUIT
+
+GRIDIMAGE density4 density4.color density5 BMP
+GRIDPOLY density4 density6
+
+&ECHO &OFF; TABLES; &ECHO &ON
+	SELECT density6.pat
+	ADDITEM density6.pat LINK 4 10 B
+	CALCULATE LINK = GRID-CODE
+	COMMIT
+QUIT
+
+JOINITEM density6.pat density2.remap density6.pat link
+PROJECTDEFINE cover density6
+	PROJECTION Geographic
+	UNITS DD
+	SPHEROID WGS84
+	PARAM
+
+/* {{{ LOAD INTO SDE
+	&SEVERITY &ERROR &IGNORE
+	DATASET deletelayer connGRIDA grida_gfxboxes shape
+	DATASET deletetable connGRIDA grida_gfxboxes
+	&SEVERITY &ERROR &ROUTINE bailout
+
+    DATASET createlayer connGRIDA grida_gfxboxes shape COVERAGE density6 poly 10
+    LAYER define boxes sde connGRIDA grida_gfxboxes shape poly
+    LAYERIOMODE boxes loadonly
+    LAYERIMPORT boxes cover density6 poly
+    LAYERIOMODE boxes normal
+	LAYER remove boxes
+	DATASET disconnect connGRIDA
+/* }}} 
+
+/* DONE!
+&SETVAR strMessageToSend = "Finished- %thisFile%"
+&CALL message
+
+/* cleanup (proper exit)
+&CALL niceclose
+&return
+
+/* SUBROUTINES BLOCK/*{{{*/
+
+
+/* {{{ MESSAGE
+/* Sends the text in the %strMessageToSend% string
+&ROUTINE message
+	&SETVAR strSystemInfo = [extract 5 [show &os]] [extract 2 [SHOW &PT ALL]]
+	&IF %hasWindows% eq .TRUE. &THEN &DO
+		/* &SYSTEM net send pc30 --- %strMessageToSend% %strSystemInfo%
+		/* &SYSTEM cat %dirTemp%%thisFile%.log | mail -s %strMessageToSend% -a ahlenius@hisoya.grida.no
+	&END
+	&ELSE &DO
+		/* &SYSTEM cat ~/%thisFile%.log | mail -s %strMessageToSend% ahlenius@hisoya.grida.no
+	&END
+&RETURN
+/* }}} 
+
+/* FINISH IT OFF NICELY/*{{{*/
+&ROUTINE niceclose
+
+	/* Just a date stamp for the log-file
+	&SYSTEM %strDatecmd%
+
+	&ECHO &OFF
+	&MESSAGES &ON
+	&WATCH &OFF
+	&SEVERITY &ERROR &IGNORE
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	LAYER remove boxes
+	dataset disconnect connGRIDA
+	w /home/ahlenius
+&return
+/*}}}*/
+
+/* In case of error, make sure that the env. is reset
+&ROUTINE bailout
+
+	&ECHO &OFF
+	&MESSAGES &ON
+	&WATCH &OFF
+	&SEVERITY &ERROR &IGNORE
+
+	&SETVAR strMessageToSend = "BAILOUT- %thisFile%"
+	&CALL message
+
+	&CALL niceclose
+	&TYPE
+	&TYPE
+	&TYPE
+&RETURN &ERROR BAILING OUT OF AML
+/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+
+
+

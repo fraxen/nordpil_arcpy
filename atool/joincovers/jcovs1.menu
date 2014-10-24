@@ -1,0 +1,43 @@
+7 jcovs1.menu
+/* ---------------------------------------------------------------------------
+/*          JOINEM - Geomatics Senior Project - University of Florida
+/* ---------------------------------------------------------------------------
+/*    Menu: JCOVS1.MENU
+/* Purpose: jcovs1 tool interface.
+/* ---------------------------------------------------------------------------
+/* History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/* ===========================================================================
+    Coverages to be joined:
+
+    %datalist0                               %butto0
+
+                                             %button1
+
+                                             %button2
+
+
+
+    Total Covers:          %displ0
+
+
+    %cancel4                                     %butt5
+%datalist0 INPUT .JCOVS1$CURCOVER 39 TYPEIN NO SCROLL YES ROWS 7 CHOICE ~
+  -FILE %.jcovs1$filelist% -DISPLAY 1 -NOSORT
+%butto0 BUTTON KEEP ~
+  HELP 'Add covers to list' ~
+  'Add...' &r jcovs1 ADD
+%button1 BUTTON KEEP ~
+  HELP 'Delete selected cover from list' ~
+  'Remove' &r jcovs1 REMOVE
+%button2 BUTTON KEEP ~
+  HELP 'Save list to text file' ~
+  'Save...' &r jcovs1 SAVE_LIST
+%displ0 DISPLAY .jcovs1$totalcovs 16 VALUE
+%cancel4 BUTTON CANCEL ~
+  HELP 'Cancel the JoinCovers Wizard' ~
+  'Cancel' &run jcovs1 CANCEL
+%butt5 BUTTON KEEP ~
+  HELP 'Go to Step 2' ~
+  'Next >>' &run jcovs1 NEXT
+%FORMOPT SETVARIABLES IMMEDIATE NEXTFIELD ADVANCE MESSAGEVARIABLE .jcovs1$msg
+%FORMINIT &run jcovs1 AUTOADD

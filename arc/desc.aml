@@ -1,0 +1,9 @@
+/* Snippet to get a short for describe
+/* $Header: /config/config/aml/arc/desc.aml,v 1.1 2003/11/21 11:27:33 hugo Exp $
+/* Last Modified: 2003-Nov-13 11:45 (HA)
+/*
+/* HISTORY:
+/* 2003-Nov-13 -- created the file(HA)
+
+&ARGS dataset
+describe %dataset%

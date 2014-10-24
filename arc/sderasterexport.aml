@@ -1,0 +1,77 @@
+/* sderasterexport.aml
+/* Wrapper for sderaster.exe
+
+/* Hugo Ahlenius, UNEP/GRID-Arendal
+/* Last Modified: 2004-Jan-13 12:45 (HA)
+
+/* HISTORY
+/* 2002-Nov-12 -- Created the file(HA)
+/* 2004-Jan-13 -- Updated the line that runs globalvars(HA)
+
+&ARGS strRasterName strFileName strSDEdatabase strColumn
+&s thisFile = sderasterexport
+/* STANDARD BLOCK/*{{{*/
+	&severity &error &routine bailout
+	&WATCH %temp%\%thisFile%.log
+	&RUN globalvars.aml
+/*/*}}}*/
+&IF [NULL %strRasterName%] OR [NULL %strFileName%] &THEN &GOTO USAGE
+&SETVAR strSDEinstance esri_sde
+&SETVAR strSDEpassword CinderCone
+&SETVAR strSDEserver utnes.grida.no
+&IF [NULL %strSDEdatabase%] &THEN &SETVAR strSDEdatabase sde_world_geo
+&IF [NULL %strColumn%] &THEN &SETVAR strColumn IMAGE
+&SETVAR strSDEuser %strSDEdatabase%
+/* Check output format, if there is no dot in the filename (for extension),
+/* then default to tif
+&IF [SEARCH %strFileName% .] = 0 &THEN &DO
+	&TYPE No file format given, defaulting to TIF
+	&SETVAR strFileName %strFileName%.tif
+&END
+
+&SYSTEM %.strPathSDEbin%\sderaster.exe -o export -l %strRasterName%,%strColumn% -v 1 -f %strFileName% -i %strSDEinstance% -s %strSDEserver% -D %strSDEdatabase% -u %strSDEdatabase% -p %strSDEpassword%
+
+/* cleanup (proper exit)
+&CALL niceclose
+&RETURN
+
+/* USAGE
+&LABEL USAGE
+	&WATCH &OFF
+	&ty
+	&ty USAGE
+	&ty SDERASTEREXPORT rastercolumn outfilename {database} {column, defaults to IMAGE}
+&RETURN
+
+ /* SUBROUTINES BLOCK/*{{{*/
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&WATCH &OFF
+	&SEVERITY &ERROR &FAIL
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	layer remove inLayer
+	layer remove bound
+	dataset disconnect connUtnes
+	&echo &off
+	&messages &on
+	&return
+	/* Done!
+	/*}}}*/
+
+	/* In case of error, make sure that the env. is reset
+	&routine bailout
+	&call niceclose
+	&type
+	&type
+	&type
+	&return &error Bailing out of AML
+	/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+
+

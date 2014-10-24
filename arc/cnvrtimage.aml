@@ -1,0 +1,271 @@
+/*ARC/INFO User Group: ESRI-L
+/** 
+/**Date: Thu, 21 Nov 1996 14:15:05 +0100
+/**Subject: ESRI: SUM: ESRI: Problem with the IMAGEGRID command
+/*
+/*Kris
+/* CnvrtImage.aml By: Kevin S. Larson Created: 7/14/94
+/*
+/* Purpose is to take a grid just created by imagegrid, that has signed
+/* numbers in it, and get grid to recognize those negative numbers. Also
+/* Allows for a specific data value to be flagged as nodata.
+/*
+/* Passed Variables:
+/* ingrid - Input Grid name.
+/* outgrid - Output Grid name.
+/* nodata_val - The data value to be set to nodata.
+/* nbits - The number of bits the data had in the original image.
+/* typ - The type of signed number from the original image.
+/*
+/* Global Variables:
+/*
+/* Local Variables:
+/* mes_num - The message number when an error occurs.
+/* ingd - Used for manipulating input grid name.
+/* stk - Indicates if a stack is present or not.
+/* stk_num - The number of grids in the stack.
+/* 
+/* Routines:
+/* err_mes - Prints a message and it's number when an error occurs.
+/* Also terminates run of current program.
+/*
+/* External Programs:
+/* 
+
+&args ingrid outgrid nodata_val nbits typ
+&ECHO &ON
+
+&if [null %outgrid%] &then
+&do
+&s mes_num 1
+&call err_mes
+&end
+
+&if [null %nbits%] &then
+&s nbits 16
+
+&if [exists %outgrid% -directory] &then
+&do
+&s mes_num 2
+&call err_mes
+&end
+&else
+&do
+&if [length %outgrid%] ge 13 &then
+&do
+&s mes_num 8
+&call err_mes
+&endt
+&end
+
+&s stk .FALSE.
+&s stk_num 1
+&if not [exists %ingrid% -vat] &then
+&do
+&if [exists %ingrid%.stk -file] &then
+&s stk .TRUE.
+&else
+&if [substr [quote [show version]] 1 3] >= 7.0 &then
+&do 
+&if [exists %ingrid% -stack] &then
+&s .stk .TRUE.
+&end
+&else
+&do
+&s mes_num 3
+&call err_mes
+&end
+&end
+
+&if %stk% &then
+&do
+&s stk_num 1
+&do &while [exists %ingrid%c%stk_num% -grid]
+&s stk_num %stk_num% + 1
+&end
+&if %stk_num% eq 1 &then
+&do
+&s mes_num 9
+&call err_mes
+&end
+&else
+&do
+&s stk_num %stk_num% - 1
+&end
+&if [length %output%] ge [calc 13 - [calc %stk_num% - 1]] &then
+&do
+&s mes_num 8
+&call err_mes
+&end
+&end
+
+&if [null %typ%] or %typ%_ eq #_ &then
+&do
+&s typ 2s
+&end
+&else
+&if %typ%_ ne 2s_ and %typ%_ ne 1s_ and %typ%_ ne sm_ &then
+&do
+&s mes_num 6
+&call err_mes
+&end
+
+&select %nbits%_
+&when 8_
+&do
+&s low_val 128 - 1
+&s hi_val 256
+&end
+&when 16_
+&do
+&s low_val 32768 - 1
+&s hi_val 65536
+&end
+&when 32_
+&do
+&s low_val 2147483648 - 1
+&s hi_val 4294967296
+&end
+&when #_
+&do
+&s low_val 32768 - 1
+&s hi_val 65536
+&end
+&otherwise
+&do
+&s mes_num 4
+&call err_mes
+&end
+&end
+
+&if %typ% eq 1s &then
+&s hi_val %hi_val% - 1
+&else
+&if %typ% eq sm &then
+&s hi_val %low_val% + 1
+
+&if [show program] ne GRID &then
+&do 
+&s mes_num 7
+&call err_mes
+&end
+
+&s ingd %ingrid%
+&s otgd %outgrid%
+&do loop := 1 &to %stk_num%
+&if %stk% &then
+&do
+&s ingrid %ingd%c%loop%
+&s outgrid %otgd%c%loop%
+&end
+&else
+&do
+&s ingrid %ingd%
+&s outgrid %otgd%
+&end
+
+&if %typ% eq 2s or %typ% eq 1s &then
+&do
+&if [null %nodata_val%] or %nodata_val%_ eq #_ &then
+%outgrid% = merge ( setnull ( %ingrid% > %low_val% , %ingrid% ) , ~
+( %ingrid% - %hi_val% ) )
+&else
+&if [type %nodata_val%] eq -1 &then
+%outgrid% = select( merge ( setnull ( %ingrid% > %low_val% , ~
+%ingrid% ) , ( %ingrid% - %hi_val% ) ), ~
+"value <> [value nodata_val]" )
+&else
+&do
+&s mes_num 5
+&call err_mes
+&end
+&end
+&else
+&do
+&if [null %nodata_val%] or %nodata_val%_ eq #_ &then
+%outgrid% = merge ( setnull ( %ingrid% > %low_val% , %ingrid% ) , ~
+( ( %ingrid% - %hi_val% ) * -1 ) )
+&else
+&if [type %nodata_val%] eq -1 &then
+%outgrid% = select( merge ( setnull ( %ingrid% > %low_val% , ~
+%ingrid% ) , ( ( %ingrid% - %hi_val% ) * -1 ) ), ~
+"value <> [value nodata_val]" )
+&else
+&do
+&s mes_num 5
+&call err_mes
+&end
+&end
+&end
+
+
+
+&return
+
+
+&routine err_mes
+
+&if not [variable mes_num] &then
+&s mes_num -1
+
+&type Message number %mes_num%.
+&select %mes_num%
+&when 1
+&do
+&type Usage: CNVRTIMAGE <Input Grid> <Output Grid> {NoData Value} 
+&type {Number of Bits} {2s | 1s | sm }
+&type
+&type It takes an input grid and allows GRID to see the negative numbers.
+&type It optionally applies a nodata value to a specific value in the GRID.
+&type
+&type ARGUMENTS - <Input Grid> - The input grid, just imported from an image.
+&type <Output Grid> - The grid to be output from processing.
+&type {NoData Value} - The value to be set to nodata.
+&type {Number of Bits} - The number of bits of the input image
+&type data. The default is 16. Options are: 8, 16, & 32.
+&type {2s | 1s | sm} - The way the signed input image data was
+&type stored.
+&type 2s - Two's complement, default.
+&type 1s - One's complement.
+&type sm - Signed Magnitude. 
+&end
+&when 2
+&do
+&type %outgrid% already exists.
+&end
+&when 3
+&do
+&type %ingrid% does not exist.
+&end
+&when 4
+&do
+&type %nbits% is an invalid value.
+&end
+&when 5
+&do
+&type %nodata_val% is an invalid nodata value.
+&end
+&when 6
+&do
+&type %typ% is an invalid data type.
+&end
+&when 7
+&do
+&type Must be run from the GRID prompt.
+&end
+&when 8
+&do
+&type %outgrid% name is too long.
+&end
+&when 9
+&do
+&type %input% does not exist with the default names.
+&end
+&otherwise
+&do
+&type Unknown message number.
+&end
+&end
+
+&return &error Bailing out of CNVRTIMAGE.AML
+

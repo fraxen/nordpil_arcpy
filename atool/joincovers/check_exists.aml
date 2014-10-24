@@ -1,0 +1,124 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: CHECK_EXISTS.AML
+/*   Purpose: Check the existence of all coverages in a text file.  Set var
+/*            to .TRUE. if all exist, .FALSE. if one or more are missing.  
+/*            Create output file listing missing coverages.
+/*--------------------------------------------------------------------------
+/*     Usage: CHECK_EXISTS INIT <covers_file> <missing_file> {variable_name}
+/*
+/* Arguments:   covers_file - ASCII text list of coverages (name and path)
+/*             missing_file - ASCII text file to contain missing coverages
+/*            variable_name - set to .TRUE. if all covers exist
+/*
+/*  Routines:    INIT - Check args, input, set up loop structure
+/*               LOOP - check if current cover exists, called by 
+/*                      file_loop_aml for every cover/record in file
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*  
+/*   Globals: .check_exists$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml
+/*            file_append_record.aml
+/*            file_init.aml
+/*--------------------------------------------------------------------------
+/*     Notes:
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up loop structure to call LOOP routine to check existence.
+
+/* extract args.
+&s file = [extract 1 [unquote %arglist%]]
+&s missfile = [extract 2 [unquote %arglist%]]
+&s .check_exists$var = [extract 3 [unquote %arglist%]]
+
+/* Check arguments
+&if [null %file%] or [null %missfile%] &then
+ &call usage
+
+&if [null %.check_exists$var%] &then
+  &s .check_exists$var .check_exists$trash
+
+/* Make sure file list exists.
+&if not [exists %file% -file] &then
+  &return Input file %file% not found.
+
+/* Make sure missing file doesn't exist.
+&if [exists %missfile% -file] &then
+  &return Output file %missfile% already exists.
+
+&s %.check_exists$var% .TRUE.
+
+/* Init missing file list.
+&run file_init .check_exists$missfile xx [before %AML$FILE% .aml]
+
+/* Loop through each record/cover and check.
+&run file_loop_aml %file% [quote check_exists LOOP] .check_exists$record
+
+/* Copy temporary missing file to user defined file if some missing.
+&if [value %.check_exists$var%] &then &do
+  &s delstat [delete %.check_exists$missfile% -file]
+  &type  Found all coverages
+&end
+&else
+  &s renamestat [copy %.check_exists$missfile% %missfile% -file]
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+/* Check current cover/record for existence.
+&if not [exists %.check_exists$record% -cover] &then &do
+  &s %.check_exists$var% .FALSE.
+  &type  Coverage %.check_exists$record% does not exist.
+  &run file_append_record %.check_exists$missfile% %.check_exists$record% ~
+                          # # %.check_exists$var%
+&end
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: CHECK_EXISTS INIT <covers_file> <missing_file> {variable_name}
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return &inform
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

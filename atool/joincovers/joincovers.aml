@@ -1,0 +1,402 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: JOINCOVERS.AML
+/*   Purpose: Prepare and join coverages using the APPEND command.  Solve  
+/*            common problems encountered when joining multiple coverages
+/*            such as variable feature classes and items.
+/*
+/*--------------------------------------------------------------------------
+/*     Usage: JOINCOVERS
+/*
+/* Arguments: (none)
+/*
+/*  Routines:    INIT - initialize environment and start the wizard.
+/*              STEP1 - called after step1 menu to check cover existence.
+/*              STEP2 - called after step2 menu to find existing features.
+/*              STEP3 - called after step3 menu to eval. features/choices.
+/*              STEP4 - called after step4 menu to warn user of changes.
+/*            PROCESS - called when wizard is Finished - begins processing.
+/*             CANCEL - stop all dialogs.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*
+/*   Globals: .joincovers$*, .jcovs*$*
+/*
+/*--------------------------------------------------------------------------
+/*     Calls: (directly or indirectly)
+/*                    add_items - add items to all covers
+/*                  append_file - append text list of coverages
+/*                 check_exists - check existence of covers
+/*                 clean_covers - clean coverages
+/*               create_classes - add feature classes to covers
+/*                   delete_msk - delete MSK files for covers
+/*              describe_covers - set &describe vars for covers
+/*             file_append_file - append two files
+/*           file_append_record - append record to file
+/*           file_count_records - count number of records in file
+/*           file_delete_record - remove a record from a file
+/*              file_get_record - return string at record number in file
+/*                    file_init - create a file and scratchname pointer
+/*                file_loop_aml - call an aml for every record in a file
+/*           file_search_record - search for a string or record in a file
+/*           file_subtract_file - remove one file from another
+/*                find_features - find features in covers
+/*                   find_items - find items in covers
+/*                       jcovs1 - step 1 - select coverages
+/*                      jcovs1a - step 1a - add coverages
+/*                       jcovs2 - step 2 - options for handling variability
+/*                       jcovs3 - step 3 - select features classes to retain
+/*                       jcovs4 - step 4 - topological options build/clean
+/*                       jcovs5 - step 5 - output cover
+/*                   pull_items - re-order items in all covers
+/*                   same_items - apply find_items, add_items, and pull_items
+/*              update_topology - update prelim topology, int. errors
+/*           
+/*--------------------------------------------------------------------------
+/*     Notes: 1. All above amls & menus must be in search paths.
+/*            2. Additional calls are made to standard ARCTOOLS.
+/*            3. User must have read,write access to workspace/directory.
+/*            4. Large numbers of coverages will cause menus to run slowly.
+/*            5. APPEND can only handle 500 covers at a time.
+/*            6. Maximum 100 items (PULLITEMS) (including found).
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+&args routine arglist:rest
+&severity &error &routine bailout
+
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else &do
+  &s routine INIT
+  &call %routine%
+&end
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up the environment and run the wizard.
+
+/* Check program
+&if [show program] ne ARC &then
+  &return Run [before %AML$FILE% .aml] from ARC.
+
+/* Store current environment.
+&if not [null [show &amlpath]] &then
+  &s curamlpath [show &amlpath]
+&if not [null [show &menupath]] &then 
+  &s curmenupath [show &menupath]
+&s curterm [show &terminal]
+&s curfull [show &fullscreen]
+
+/* Sets arctools paths.
+&dv .joincovers*
+&dv .jcovs*
+&term 9999 &mouse
+&run [joinfile [joinfile $ATHOME lib -sub] setpaths -file]
+
+/* Search for needed joincovers amls and menus.
+&type  Searching for components...
+&s .joincovers$menulist jcovs1 jcovs1a jcovs2 jcovs3 jcovs4 jcovs4a jcovs5 
+&s .joincovers$amllist jcovs1 jcovs1a jcovs2 jcovs3 jcovs4 jcovs4a jcovs5 ~
+ add_items append_file change_item check_exists clean_covers ~ 
+ copy_covers create_classes delete_msk describe_covers file_append_file ~
+ file_append_record file_count_records file_delete_record file_get_record ~
+ file_init file_loop_aml file_search_record file_subtract_file ~
+ find_features find_items pull_items update_topology 
+&do menu &list %.joincovers$menulist%
+  &run [joinfile [joinfile $ATHOME misclib -sub] searchpaths -file] ~
+   menu %menu%.menu .joincovers$location
+  &if not [variable .joincovers$location] &then
+    &return Can not find %menu% in menupath.
+&end
+&do aml &list %.joincovers$amllist%
+  &run [joinfile [joinfile $ATHOME misclib -sub] searchpaths -file] ~
+   aml %aml%.aml .joincovers$location
+  &if [null %.joincovers$location%] &then
+    &return Can not find %aml% in amlpath.
+&end
+
+/* Start wizard.
+&type  Starting wizard...
+&s .joincovers$start .true.
+&s .joincovers$cancel .FALSE.
+&run jcovs1 init # # modal
+
+/* Allow user to go forward or backward through dialogs.
+&if [variable .joincovers$nextaml] and not %.joincovers$cancel% &then &do
+  &do &until [quote %.joincovers$nextaml%] = 'FINISHED' or ~
+   %.joincovers$cancel% = .TRUE.
+    &run %.joincovers$nextaml% # # modal
+  &end
+&end
+
+/* After the user is finished with dialogs, process. (if not cancelled)
+&if not %.joincovers$cancel% &then
+  &call PROCESS 
+
+&call EXIT
+
+&return
+
+/*------------
+&routine STEP1
+/*------------
+/* Check existence of coverages selected in STEP1. If any are missing
+/* tell user.  User can continue with available or quit.
+&run msworking init [quote Looking for coverages...] # # 'Working'
+&s .joincovers$dontexist = [scratchname -suffix [before %AML$FILE% .aml]]
+&run check_exists init %.jcovs1$filelist% %.joincovers$dontexist%
+&run msworking close
+&if [exists %.joincovers$dontexist% -file] &then &do
+  &s newname [scratchname -prefix missing -suffix .txt]
+  &s renstat = [rename %.joincovers$dontexist% %newname% ]
+  &s .joincovers$cancel .TRUE.
+  &run msinform [quote Some coverages were not found. ] ~
+   [quote Missing files recorded in:  %newname% ]
+  &s .joincovers$cancel .TRUE.
+&end
+
+&return
+
+/*------------
+&routine STEP2
+/*------------
+/* After making major processing choices in STEP2, search for
+/* variable feature classes.
+
+&run msworking init [quote Querying Coverages...]
+&if [variable .jcovs3$classlist] &then
+  &dv .jcovs3$classlist
+&if %.jcovs2$featflag% &then &do
+  &run msworking update [quote Finding Feature Classes...]
+  &run find_features init %.jcovs1$filelist% joincovers ~
+   .joincovers$availclasslist
+&end
+&else &do  /* Use the first cover for features.
+  &run file_get_record init %.jcovs1$filelist% 1 .joincovers$firstcov
+  &run file_init .joincovers$firstcovfile xx [before %AML$FILE% .aml]
+  &run file_append_record %.joincovers$firstcovfile% %.joincovers$firstcov%
+  &run find_features init %.joincovers$firstcovfile% joincovers ~
+   .joincovers$availclasslist
+  &type  Results based on feature classes in first cover:~
+  %.joincovers$firstcov%
+&end
+
+&run msworking close
+
+&return
+
+/*------------
+&routine STEP3
+/*------------
+/* Check if all 100% - processing needed?
+&s  .joincovers$needfeatures = .FALSE.
+&do usefeat &list %.jcovs3$classlist%
+  &if [value .joincovers$%usefeat%_percent] ne 100 &then
+    &s .joincovers$needfeatures .TRUE.
+  &if %usefeat% = polygon and [value .joincovers$%usefeat%_percent] ~
+   ne 100 &then
+    &run msinform 'Not all of your coverages have polygon topology.' ~
+      [quote Use '''Clean all coverages''' option in Step 4 or fix manually.]
+  
+&end
+&return
+
+/*------------
+&routine STEP4
+/*------------
+/* Check results of step 4. Warn about changes.
+&s .joincovers$change = .TRUE. /* OK to change covers.
+&if %.jcovs4$buildflag% or %.jcovs4$intflag% or %.jcovs4$mskflag% or ~ 
+ %.jcovs4$cleanflag% or %.jcovs2$itemflag% or %.joincovers$needfeatures% &then
+  &run msconfirm init .joincovers$change ~
+   [quote Joining these coverages will require some changes.] ~
+    [quote Okay to modify these coverages?]
+&if not %.joincovers$change% &then &do /* Not OK to change.
+  &s .joincovers$cancel .TRUE.
+  &type  Can not continue without making changes.
+  &type  See copy_covers.aml to backup coverages.
+  &s .joincovers$cancel .TRUE.
+&end
+&return
+
+/*--------------
+&routine PROCESS /* Called after menu finished.
+/*--------------
+/* Make coverages similar before appending.
+
+&run msworking init [quote Preparing coverages:] # # 'Working...'
+
+/* Delete MSK Files.
+&if %.jcovs4$mskflag% &then &do
+  &run msworking update [quote Preparing coverages: ] ~
+   [quote Removing MSK files...]
+  &run delete_msk init %.jcovs1$filelist%
+&end
+
+/* Clean all coverages.
+&if %.jcovs4$cleanflag% &then &do
+  &run msworking update [quote Preparing coverages: ] ~
+   [quote Cleaning all coverages with %.jcovs4$cleantype% option...]
+  &run clean_covers init %.jcovs1$filelist% %.jcovs4$dangle% ~
+   %.jcovs4$fuzzy% %.jcovs4$cleantype%
+&end
+
+/* Build those needed, check for intersecting arcs.
+/* If not cleaning all maybe build.
+&else &do
+  &if %.jcovs4$intflag% &then &do
+    &run msworking update [quote Preparing coverages: ] ~
+     [quote Updating topology and cleaning covers with intersections...]
+    &run update_topology init %.jcovs1$filelist% CHECK CLEAN ~
+     %.jcovs4$dangle% %.jcovs4$fuzzy%
+  &end
+  &if %.jcovs4$buildflag% and not %.jcovs4$intflag% &then &do
+    &run msworking update [quote Preparing coverages: ] ~
+     [quote Updating topology...]
+    &run update_topology init %.jcovs1$filelist%
+  &end
+&end
+
+/* Create features classes.
+&if %.jcovs2$featflag% &then &do
+  &if %.joincovers$needfeatures% &then &do
+    &run msworking update [quote Preparing coverages: ] ~
+     [quote Creating features classes...]
+    &run create_classes init %.jcovs1$filelist% ~
+     [unquote %.jcovs3$classlist%]
+  &end
+&end
+
+/* Make sure coverages have the same items. Always check for different defs.
+&if %.jcovs2$itemflag% &then &do
+  &run msworking update [quote Preparing coverages: ] ~ 
+   [quote Making items compatible...]
+  &do class &list %.jcovs3$classlist%
+    &if [upcase %class%] cn 'ANNO' &then
+    &s class = TAT.[after [upcase %class%] ANNO.]
+    &s .joincovers$diffout = [scratchname -suffix [before %AML$FILE% .aml]]
+    &s .joincovers$%class%items [scratchname -prefix %class%_items -suffix .txt]
+    &run same_items init %.jcovs1$filelist% FIND ~
+     [value .joincovers$%class%items] %class% BOTH %.joincovers$diffout%
+     &if [exists %.joincovers$diffout% -file] &then &do
+      &run msinform [quote Found variable item definitions. See %.joincovers$diffout%.] ~
+       [quote Change these items and run JoinCovers again.]
+      &call EXIT
+    &end
+  &end
+&end
+
+
+
+/* Dont pass TIC feature class to APPEND.
+&if [keyword tic %.jcovs3$classlist%] gt 0 &then
+  &s .jcovs3$classlist = [unquote [subst [quote %.jcovs3$classlist%] tic ]]
+
+/* Append coverages
+&run msworking update [quote Appending Coverages... ]
+&if %.jcovs2$userflag% &then
+  &s offset = FEATURES
+&if %.jcovs2$ticflag% &then
+  &s offset = TICS
+&if %.jcovs2$ticflag% and %.jcovs2$userflag% &then
+  &s offset = ALL
+&if not %.jcovs2$ticflag% and not %.jcovs2$userflag% &then
+  &s offset = NONE
+&run append_file init %.jcovs1$filelist% %.jcovs5$cover% ~
+ %.jcovs3$classlist% %offset%
+
+&run msworking close
+
+&if %.jcovs2$itemflag% &then &do
+  &type;&type  Final items based on the following files: 
+  &do class &list %.jcovs3$classlist%
+    &if [upcase %class%] cn 'ANNO' &then
+      &s class = TAT.[after [upcase %class%] ANNO.]
+    &if [exists [value .joincovers$%class%items] -file] &then &do
+      &type  [value .joincovers$%class%items]
+    &end
+  &end
+&end
+&type
+
+&s datetime = [date -ampm] on [date -usa]
+&if [exists %.jcovs5$cover% -cover] &then
+  &run msinform [quote Created %.jcovs5$cover%] ~
+   [quote Process finished at %datetime%.]  
+
+
+&return
+
+/*-------------
+&routine CANCEL
+/*-------------
+/* Cancel wizard while still in dialog stages. (before processing)
+&run msconfirm init .joincovers$cancel ~
+  [quote Really cancel JoinCovers?] # # [quote Confirm Cancel]
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: JOINCOVERS
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu.
+
+&type  Exiting...
+&type
+
+/* Kill other menus if around.
+&do athread &list %.joincovers$menulist%
+  &if [sho &thread &exists tool$%athread%] &then
+    &thread &delete tool$%athread%
+&end
+
+/* Restore environments.
+&if [variable curamlpath] &then
+  &amlpath %curamlpath%
+&if [variable curmenupath] &then
+  &menupath %curmenupath%
+&if [variable curdisplay] &then
+  display %curdisplay%
+&if [variable curterm] &then &do
+  &if %curterm% ne ' ',' ' &then
+    &term %curterm%
+&if [variable curfull] &then 
+  &fullscreen %curfull%
+
+  
+&end
+
+/* Delete globals in all components.
+&dv .[before %AML$FILE% .aml]$*
+&dv .jcovs*
+
+/* Delete tmp files created by any component.
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&do file &list [listfile xx*jcovs* -file]
+  &s delstat = [delete %file%]
+&end
+
+&return &inform
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&run msworking close
+&type An error has occurred in routine: %routine% (JOINCOVERS.AML).
+&call exit
+&return

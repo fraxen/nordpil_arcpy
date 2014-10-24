@@ -1,0 +1,52 @@
+7 jcovs3.menu
+/* ---------------------------------------------------------------------------
+/*          JOINCOVERS - Geomatics Senior Project - University of Florida
+/* ---------------------------------------------------------------------------
+/*    Menu: JCOVS3.MENU
+/* Purpose: jcovs3 tool interface.
+/* ---------------------------------------------------------------------------
+/* History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/* ===========================================================================
+    Select feature classes:
+
+    Available:                      ^Include:
+    %datalist1          %bu0        %datalist2
+
+                       %bu1
+
+
+
+
+    %display0
+
+
+    %cancel2                         %b4         %butt5
+%datalist1 INPUT .JCOVS3$AVAILCLASSCHOICE 16 TYPEIN NO SCROLL YES ROWS 6 ~
+  KEEP ~
+  ERROR 'Lists available feature classes' ~
+  RETURN '&s .jcovs3$fromavail .true.;&r jcovs3 UPDATE_CLASS_FREQ' ~
+  CHOICE ~
+  %.joincovers$availclasslist% -NOSORT
+%bu0 BUTTON KEEP ~
+  HELP 'Move selected feature to Include list' ~
+  'Add >' &r jcovs3 INCLUDE
+%datalist2 INPUT .JCOVS3$CLASSCHOICE 16 TYPEIN NO SCROLL YES ROWS 6 ~
+  KEEP ~
+  ERROR 'List feature classes to retain in output' ~
+  RETURN '&s .jcovs3$fromavail .false.;&r jcovs3 UPDATE_CLASS_FREQ' ~
+  CHOICE ~
+  %.jcovs3$classlist% -NOSORT
+%bu1 BUTTON KEEP ~
+  HELP 'Move selected feature to Available list' ~
+  '< Remove' &r jcovs3 EXCLUDE
+%display0 DISPLAY .jcovs3$freqmsg 53 VALUE
+%cancel2 BUTTON CANCEL ~
+  HELP 'Cancel the JoinCovers Wizard' ~
+  'Cancel' &run jcovs3 CANCEL
+%b4 BUTTON KEEP ~
+  HELP 'Return to Step 2' ~
+  '<< Back' &run jcovs3 BACK
+%butt5 BUTTON KEEP ~
+  HELP 'Go to Step 4' ~
+  'Next >>' &run jcovs3 NEXT
+%FORMOPT SETVARIABLES IMMEDIATE NEXTFIELD ADVANCE MESSAGEVARIABLE .jcovs3$msg

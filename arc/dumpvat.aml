@@ -1,0 +1,65 @@
+/* Dump of VATs
+
+/* Inputs needed:
+/* 	grid
+
+/* Hugo Ahlenius	
+/* Last Modified: 2002-Jan-15 11:23
+
+&ARGS inSpecificGrid
+
+/* {{{ Startup
+&ECHO &ON 
+&PT &ON
+
+&SEVERITY &ERROR &ROUTINE bailout
+
+&SETVAR hasWindows = .FALSE.
+&IF "[BEFORE [SHOW &OS] ,]" eq "Windows_NT" &THEN &SETVAR hasWindows = .TRUE.
+
+&SETVAR dirChar = /
+&IF %hasWindows% &THEN &SETVAR dirchar = \
+
+&WATCH %temp%%dirchar%dumpvat.log
+/* }}} 
+
+&IF [EXISTS dumpvat.csv -file] &THEN &SYS rm -r -f dumpvat.csv
+&ECHO &OFF
+TABLES
+	&ECHO &ON
+	SELECT %inSpecificGrid%.vat
+	UNLOAD dumpvat.csv
+q
+
+/* cleanup (proper exit)
+&CALL niceclose
+&return
+
+/* SUBROUTINES BLOCK/*{{{*/
+
+	/* FINISH IT OFF NICELY/*{{{*/
+	&ROUTINE niceclose
+	&ECHO &OFF
+	&MESSAGES &ON
+	&WATCH &OFF
+	&SEVERITY &ERROR &FAIL
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	dataset disconnect connUtnes
+	&return
+	/*}}}*/
+
+	/* In case of error, make sure that the env. is reset
+	&routine bailout
+	&call niceclose
+	&TYPE
+	&TYPE
+	&TYPE
+	&return &error Bailing out of AML
+	/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+

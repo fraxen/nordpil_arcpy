@@ -1,0 +1,139 @@
+/* {{{ COMMENTS
+/* tileify.aml
+/* Hugo Ahlenius, UNEP/GRID-ARendal
+/* Last Modified: 2004-Feb-12 17:15 (HA)
+/*
+/* I split up a grid into tiles
+/*
+/* HISTORY
+/* 2004-Feb-11 -- Created the file, based on overlayimage(HA)
+/* }}} 
+
+&ARGS inGrid outGrid numOfTiles doDebug
+&SETVAR thisFile = [BEFORE %AML$FILE% '.aml']
+&SETVAR Usage = tileify inGrid numOfTiles
+&SETVAR useTempWS = .TRUE.
+
+/* {{{ DEBUG ARGS
+	&IF NOT [NULL %doDebug%] &THEN &ECHO &ON
+/* }}} 
+
+/* {{{ STANDARD BLOCK
+	&SEVERITY &ERROR &ROUTINE bailout
+	&SETVAR doCW = .TRUE.
+	&SETVAR hasWindows = .FALSE.
+	&IF "[BEFORE [SHOW &OS] ,]" eq "Windows_NT" &THEN &SETVAR hasWindows = .TRUE.
+	&IF %hasWindows% &THEN &DO
+		&WATCH %TEMP%\%thisFile%.log
+		&AMLPATH %home%/aml
+		&ATOOL %home%/aml
+		&SETVAR dirchar = \
+		&END 
+	&ELSE &DO
+		&WATCH %TEMP%/%thisFile%.log
+		&AMLPATH ~/aml
+		&ATOOL ~/aml
+		&SETVAR dirchar = /
+	&END
+	&PT &ON
+	&SYSTEM timer start
+	dataset disconnect connUtnes
+
+/* 	/* {{{ CREATE WS
+/* 	&IF %doCW% & %useTempWS% &THEN &DO /* If run with debug args
+/* 		&if [EXISTS tempws_%thisFile% -workspace] &THEN rm -r -f tempws_%thisFile%
+/* 		ARC cw tempws_%thisFile%
+/* 	&END
+/* 	ARC w tempws_%thisFile%
+/* 	/* }}} 
+/* }}}
+
+/* {{{ SETUP WORK ENVIRONMENT
+	&IF [NULL %inGrid%] | [NULL %outGrid%] &THEN &GOTO USAGE
+	&IF [NULL %numOfTiles%] &THEN &SETVAR numOfTiles = 4
+/* }}} 
+
+/* ACTUAL CODE STARTS HERE ----------------------------
+
+&DESCRIBE %inGrid%
+&SETVAR fullXmin = [ROUND %GRD$XMIN%]
+&SETVAR fullXmax = [ROUND %GRD$XMAX%]
+&SETVAR fullYmin = [ROUND %GRD$YMIN%]
+&SETVAR fullYmax = [ROUND %GRD$YMAX%]
+&SETVAR fullWidth = [CALC %fullXmax% - %fullXmin%]
+&SETVAR fullHeight = [CALC %fullYmax% - %fullYmin%]
+&SETVAR thisXOverlap = [CALC [ROUND [CALC [CALC %GRD$NCols% * 0.02 * %GRD$DX%] / %GRD$DX%]] * %GRD$DX%]
+&SETVAR thisYOverlap = [CALC [ROUND [CALC [CALC %GRD$NRows% * 0.02 * %GRD$DY%] / %GRD$DX%]] * %GRD$DX%]
+&SETVAR tileWidth = [CALC [ROUND [CALC [CALC %fullWidth% / [SQRT %numOfTiles%]] / %GRD$DX%]] * %GRD$DX%]
+&SETVAR tileHeight = [CALC [ROUND [CALC [CALC %fullHeight% / [SQRT %numOfTiles%]] / %GRD$DY%]] * %GRD$DY%]
+&DO row = 1 &TO [SQRT %numOfTiles%]
+	&DO col = 1 &TO [SQRT %numOfTiles%]
+		SETCELL %inGrid%
+		&SETVAR thisXmin = [CALC %fullXmin% - %thisXOverlap% + %tileWidth% * ( %col% - 1 )]
+		&SETVAR thisXmax = [CALC %fullXmin% + %thisXOverlap% + %tileWidth% * %col%]
+		&SETVAR thisYmin = [CALC %fullYmin% - %thisYOverlap% + %tileHeight% * ( %row% - 1 )]
+		&SETVAR thisYmax = [CALC %fullYmin% + %thisYOverlap% + %tileHeight% * %row%]
+		&IF %thisXmin% < %fullXmin% &THEN &SETVAR thisXmin = %fullXmin%
+		&IF %thisXmax% > %fullXmax% &THEN &SETVAR thisXmax = %fullXmax%
+		&IF %thisYmin% < %fullYmin% &THEN &SETVAR thisYmin = %fullYmin%
+		&IF %thisYmax% > %fullYmax% &THEN &SETVAR thisYmax = %fullYmax%
+		SETWINDOW %thisXmin% %thisYmin% %thisXmax% %thisYmax%
+		%outGrid%Y%row%X%col% = %inGrid%
+	&END
+&END
+
+/* ACTUAL CODE ENDS HERE ----------------------------
+
+/* {{{ SUB-ROUTINES
+/* }}} 
+
+/* {{{ STANDARD SUB ROUTINES
+
+	/* {{{ CLEANUP (PROPER EXIT)
+	&CALL niceclose
+	&RETURN
+	/* }}} 
+
+	/* {{{ USAGE
+	&LABEL USAGE
+		&CALL niceclose
+		&TYPE
+		&TYPE USAGE
+		&TYPE %Usage%
+		&TYPE
+	&RETURN
+	/* }}} 
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&ECHO &OFF
+	&WATCH &OFF
+	&MESSAGES &ON
+	&WATCH &OFF
+	&SYSTEM timer stop
+	&SEVERITY &ERROR &FAIL
+	&IF %:program% = PROJECT &THEN end
+	&IF %:program% <> GRID &THEN quit
+	layer remove inLayer
+	layer remove bound
+	dataset disconnect connUtnes
+	&ECHO &OFF
+	&MESSAGES &ON
+	&RETURN
+	/* Done!
+	/*}}}*/
+
+	/* {{{ BAILOUT / ERROR HANDLING
+	/* In case of error, make sure that the env. is reset
+	&ROUTINE bailout
+	&CALL niceclose
+	&TYPE
+	&TYPE
+	&TYPE
+	&RETURN &ERROR Bailing out of AML
+	/* end error handling
+	/* /* }}} 
+
+/*}}}*/
+
+

@@ -1,0 +1,71 @@
+/* additemall.aml
+/* Hugo Ahlenius, UNEP/GRID-Arendal
+/* last modified: 2001-Oct-29 13:13
+
+&ARGS inPAT
+&s thisFile = additemall
+/* STANDARD BLOCK/*{{{*/
+	&ECHO &ON
+	&severity &error &routine bailout
+	&WATCH %temp%\%thisFile%.log
+	dataset disconnect connUtnes
+	&amlpath %home%/aml
+/*/*}}}*/
+&IF [NULL %inPAT%] | NOT [EXISTS %inPAT% -INFO] &THEN &GOTO USAGE
+
+&ECHO &OFF
+TABLES
+	&ECHO &ON
+	ADDITEM %inPAT% temp 1 1 i
+	SELECT %inPAT%
+	RESEL
+	ASEL AREA > 0
+	CALC temp = 1
+	COMMIT
+QUIT
+
+
+/* cleanup (proper exit)
+&CALL niceclose
+&RETURN
+
+/* USAGE {{{
+&LABEL USAGE
+	&CALL niceclose
+	&ty
+	&ty USAGE
+	&ty ADDITEMALL pat-file.pat
+&RETURN
+/* }}}
+
+ /* SUBROUTINES BLOCK/*{{{*/
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&ECHO &OFF
+	&WATCH &OFF
+	&SEVERITY &ERROR &FAIL
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	layer remove inLayer
+	layer remove bound
+	dataset disconnect connUtnes
+	&MESSAGES &ON
+	&RETURN
+	/* Done!
+	/*}}}*/
+
+	/* In case of error, make sure that the env. is reset
+	&routine bailout
+	&call niceclose
+	&type
+	&type
+	&type
+	&return &error Bailing out of AML
+	/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+

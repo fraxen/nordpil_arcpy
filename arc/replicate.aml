@@ -1,0 +1,482 @@
+/* Export protected areas from WCMC to Arendal/Utnes
+
+/* HISTORY
+/* 2002-Jul-04 -- Added Splitting of Natpoly (HA)
+/* 2004-May-24 -- Added splitting of intpoly(HA)
+/* 2004-May-24 -- Changed the owner of tables on orwell (from ianm to vec)(HA)
+/* 2004-May-24 -- Minor spelling corrected on orwell, a "z" changed to a "s"(HA)
+/* 2004-May-25 -- Precision set to single/lowest(HA)
+/* 2005-Jan-10 -- Commented out mail sending
+
+/* Hugo Ahlenius	
+/* Last Modified: 2004-Jun-01 10:10 (HA)
+
+&ARGS numDebugSouth
+&SETVAR thisFile = replicate
+
+/* {{{ VARS
+	&SETVAR strRemoteServer = orwell.unep-wcmc.org
+	&SETVAR strRemoteDatabase = sde
+	&SETVAR strRemoteUser = Arendal
+	&SETVAR strRemotePassword = Compound
+	&SETVAR strRemoteService = 5151
+	&SETVAR strRemoteIntPoly = GIS_PA.VEC.INTPARKSCURPOL00 
+	&SETVAR strRemoteNatPoly = GIS_PA.VEC.NATPARKSCURPOL00 
+	&SETVAR strRemoteIntPoint = GIS_PA.VEC.INTPARKSCURPNT00
+	&SETVAR strRemoteNatPoint = GIS_PA.VEC.NATPARKSCURPNT00
+	&SETVAR strRemoteIntAttributeTable = GIS_PA.VEC.INTPARKSCURTAB00_REL
+	&SETVAR strRemoteNatAttributeTable = GIS_PA.VEC.NATPARKSCURTAB00_REL
+
+	&SETVAR strLocalServer = utnes.grida.no
+	&SETVAR strLocalDatabase = sde_arctic_la
+	&SETVAR strLocalUser = sde_arctic_la
+	&SETVAR strLocalPassword = CinderCone
+	&SETVAR strLocalService = 5151
+	&SETVAR strLocalIntPoly = wcmc_parks_internationalarea
+	&SETVAR strLocalNatPoly = wcmc_parks_nationalarea
+	&SETVAR strLocalIntPoint = wcmc_parks_internationalsite
+	&SETVAR strLocalNatPoint = wcmc_parks_nationalsite
+
+	&SETVAR strLocalDatabaseGeo = sde_arctic_geo
+	&SETVAR strLocalUserGeo = sde_arctic_geo
+	&SETVAR strLocalPasswordGeo = CinderCone
+
+	/* The southernmost latitude for extraction/clip (Set 50 for normal Arctic, higher for debug purposes)
+	&IF [NULL %numDebugSouth%] &THEN &SETVAR numDebugSouth = 50
+	&SETVAR strClipSouthLat = %numDebugSouth%
+/* }}} 
+
+/* {{{ DEBUG ARGS
+	&SETVAR doCW = .TRUE.
+/* }}} 
+
+/* {{{ Startup
+&ECHO &ON
+
+&PT &ON
+
+&SEVERITY &ERROR &ROUTINE bailout
+
+&SETVAR hasWindows = .FALSE.
+&IF "[BEFORE [SHOW &OS] ,]" eq "Windows_NT" &THEN &SETVAR hasWindows = .TRUE.
+
+&IF %hasWindows% &THEN &DO
+	/* Set it up like this if running on Windows
+	&SETVAR dirchar = \
+	&SETVAR dirTemp = %temp%\
+	&SETVAR strDatecmd = date /t
+	&WATCH %dirTemp%%thisFile%.log
+	&END
+&ELSE &DO
+	/* ...and like this if it is running on Solaris
+	&SETVAR dirTemp = ./
+	&SETVAR dirChar = /
+	&SETVAR strDatecmd = date
+	&WATCH ~/%thisFile%.log
+	w /tmp
+&END
+
+/* Just a date stamp for the log-file
+&SYSTEM %strDatecmd%
+
+&IF %doCW% &THEN &DO /* If run with debug args
+	&if [EXISTS tempws_replicate -workspace] &THEN rm -r -f tempws_replicate
+	cw tempws_replicate
+&END
+w tempws_replicate
+
+/* }}} 
+
+/* {{{ Make sure old connects are disconnected
+	DATASET disconnect connGRIDA
+	DATASET disconnect connGRIDAgeo
+	DATASET disconnect connWCMC
+	LAYER remove lyrRemoteIntPolyE
+	LAYER remove lyrRemoteIntPolyW
+	LAYER remove lyrRemoteIntPolyM
+	LAYER remove lyrRemoteNatPolyE
+	LAYER remove lyrRemoteNatPolyW
+	LAYER remove lyrRemoteNatPolyM
+	LAYER remove lyrRemoteIntPoint
+	LAYER remove lyrRemoteNatPoint
+	LAYER remove lyrEastClip
+	LAYER remove lyrWestClip
+	LAYER remove lyrLocalIntPoly
+	LAYER remove lyrLocalNatPoly
+	LAYER remove lyrLocalIntPoint
+	LAYER remove lyrLocalNatPoint
+	LAYER remove lyrLocalSplit
+/* }}} 
+
+/* {{{ Create Connections
+	DATASET connect connGRIDA %strLocalServer% %strLocalService% %strLocalUser% %strLocalPassword% %strLocalDatabase%
+	DATASET connect connWCMC %strRemoteServer% %strRemoteService% %strRemoteUser% %strRemotePassword% %strRemoteDatabase%
+	DATASET connect connGRIDAgeo %strLocalServer% %strLocalService% %strLocalUserGeo% %strLocalPasswordGeo% %strLocalDatabaseGeo%
+/* }}} 
+
+/* {{{ Define remote layers. Do a layersearch to limit the export in size. Export
+	/* NOTE: natpoly needs to be split up in two strips to pass through clean
+	LAYER define lyrRemoteIntPolyE sde connWCMC %strRemoteIntPoly% SHAPE poly
+	LAYER define lyrRemoteIntPolyW sde connWCMC %strRemoteIntPoly% SHAPE poly
+	LAYER define lyrRemoteIntPolyM sde connWCMC %strRemoteIntPoly% SHAPE poly
+	LAYER define lyrRemoteNatPolyE sde connWCMC %strRemoteNatPoly% SHAPE poly
+	LAYER define lyrRemoteNatPolyW sde connWCMC %strRemoteNatPoly% SHAPE poly
+	LAYER define lyrRemoteNatPolyM sde connWCMC %strRemoteNatPoly% SHAPE poly
+	LAYER define lyrRemoteIntPoint sde connWCMC %strRemoteIntPoint% SHAPE point
+	LAYER define lyrRemoteNatPoint sde connWCMC %strRemoteNatPoint% SHAPE point
+
+	/* {{{ JOINS
+	LAYERJOINS lyrRemoteIntPolyE %strRemoteIntAttributeTable%
+	LAYERJOINS lyrRemoteIntPolyW %strRemoteIntAttributeTable%
+	LAYERJOINS lyrRemoteIntPolyM %strRemoteIntAttributeTable%
+	LAYERJOINS lyrRemoteIntPoint %strRemoteIntAttributeTable%
+	LAYERJOINS lyrRemoteNatPolyE %strRemoteNatAttributeTable%
+	LAYERJOINS lyrRemoteNatPolyW %strRemoteNatAttributeTable%
+	LAYERJOINS lyrRemoteNatPolyM %strRemoteNatAttributeTable%
+	LAYERJOINS lyrRemoteNatPoint %strRemoteNatAttributeTable%
+	LAYERQUERY lyrRemoteIntPolyE %strRemoteIntPoly%.SITE_CODE = %strRemoteIntAttributeTable%.SITE_CODE
+	LAYERQUERY lyrRemoteIntPolyW %strRemoteIntPoly%.SITE_CODE = %strRemoteIntAttributeTable%.SITE_CODE
+	LAYERQUERY lyrRemoteIntPolyM %strRemoteIntPoly%.SITE_CODE = %strRemoteIntAttributeTable%.SITE_CODE
+	LAYERQUERY lyrRemoteIntPoint %strRemoteIntPoint%.SITE_CODE = %strRemoteIntAttributeTable%.SITE_CODE
+	LAYERQUERY lyrRemoteNatPolyE %strRemoteNatPoly%.SITE_CODE = %strRemoteNatAttributeTable%.SITE_CODE
+	LAYERQUERY lyrRemoteNatPolyW %strRemoteNatPoly%.SITE_CODE = %strRemoteNatAttributeTable%.SITE_CODE
+	LAYERQUERY lyrRemoteNatPolyM %strRemoteNatPoly%.SITE_CODE = %strRemoteNatAttributeTable%.SITE_CODE
+	LAYERQUERY lyrRemoteNatPoint %strRemoteNatPoint%.SITE_CODE = %strRemoteNatAttributeTable%.SITE_CODE
+	/* }}} 
+
+	LAYERSEARCH lyrRemoteIntPoint envelope box -180 90, 180 %strClipSouthLat%
+	LAYERSEARCH lyrRemoteNatPoint envelope box -180 90, 180 %strClipSouthLat%
+
+	LAYERSEARCH lyrRemoteIntPolyE AREA.INTERSECT box 40 90, 180 %strClipSouthLat%
+	LAYERSEARCH lyrRemoteIntPolyW AREA.INTERSECT box -180 90, -40 %strClipSouthLat%
+	LAYERSEARCH lyrRemoteIntPolyM AREA.INTERSECT box -40 90, 40 %strClipSouthLat%
+
+	LAYERSEARCH lyrRemoteNatPolyE AREA.INTERSECT box 25 90, 180 %strClipSouthLat%
+	LAYERSEARCH lyrRemoteNatPolyW AREA.INTERSECT box -180 90, -25 %strClipSouthLat%
+	LAYERSEARCH lyrRemoteNatPolyM AREA.INTERSECT box -25 90, 25 %strClipSouthLat%
+	
+	/* Well, export
+	PRECISION single lowest
+
+	TODO: This fails if there are too many polygins in NatpolyM -- ideally this should be split into 4 (or more) tiles in the future
+	LAYEREXPORT lyrRemoteNatPolyM cover NatPolyM1 poly define
+		AREANAME AREANAME
+		DESIGNATE DESIGNATE
+		ISO3 ISO3
+		LON LON
+		LAT LAT
+		IUCNCAT IUCNCAT
+		STATUS STATUS
+		SITE_CODE SITE_CODE
+		%strRemoteNatAttributeTable%.ADMIN ADMIN
+		%strRemoteNatAttributeTable%.MANAGEMENT MANAGEMENT
+		%strRemoteNatAttributeTable%.AREA_HA AREA_HA
+		%strRemoteNatAttributeTable%.EST_DATE EST_DATE
+		%strRemoteNatAttributeTable%.OWNER OWNER
+		%strRemoteNatAttributeTable%.NOTES NOTES
+		%strRemoteNatAttributeTable%.SOURCE SOURCE
+		~
+
+	LAYEREXPORT lyrRemoteIntPoint cover IntPoint1 point define
+		AREANAME AREANAME
+		ISO3 ISO3
+		LON LON
+		LAT LAT
+		CONV_CODE CONV_CODE
+		COUNTRY COUNTRY
+		SITE_CODE SITE_CODE
+		%strRemoteIntAttributeTable%.CONV_FULL CONV_FULL
+		%strRemoteIntAttributeTable%.CRITERIA CRITERIA
+		%strRemoteIntAttributeTable%.AREA_HA AREA_HA
+		%strRemoteIntAttributeTable%.EST_DATE EST_DATE
+		%strRemoteIntAttributeTable%.EXTRA_INFO EXTRA_INFO
+		%strRemoteIntAttributeTable%.SOURCE SOURCE
+		~
+
+	LAYEREXPORT lyrRemoteNatPoint cover NatPoint1 point define
+		MARINE MARINE
+		AREANAME AREANAME
+		DESIGNATE DESIGNATE
+		STATUS STATUS
+		ISO3 ISO3
+		LON LON
+		LAT LAT
+		IUCN IUCNCAT
+		COUNTRY COUNTRY
+		SITE_CODE SITE_CODE
+		%strRemoteNatAttributeTable%.ADMIN ADMIN
+		%strRemoteNatAttributeTable%.MANAGEMENT MANAGEMENT
+		%strRemoteNatAttributeTable%.AREA_HA AREA_HA
+		%strRemoteNatAttributeTable%.EST_DATE EST_DATE
+		%strRemoteNatAttributeTable%.OWNER OWNER
+		%strRemoteNatAttributeTable%.NOTES NOTES
+		%strRemoteNatAttributeTable%.SOURCE SOURCE
+		~
+
+	LAYEREXPORT lyrRemoteIntPolyE cover IntPolyE1 poly define
+		AREANAME AREANAME
+		ISO3 ISO3
+		LON LON
+		LAT LAT
+		CONV_CODE CONV_CODE
+		COUNTRY COUNTRY
+		SITE_CODE SITE_CODE
+		%strRemoteIntAttributeTable%.CONV_FULL CONV_FULL
+		%strRemoteIntAttributeTable%.CRITERIA CRITERIA
+		%strRemoteIntAttributeTable%.AREA_HA AREA_HA
+		%strRemoteIntAttributeTable%.EST_DATE EST_DATE
+		%strRemoteIntAttributeTable%.EXTRA_INFO EXTRA_INFO
+		%strRemoteIntAttributeTable%.SOURCE SOURCE
+		~
+
+	LAYEREXPORT lyrRemoteIntPolyW cover IntPolyW1 poly define
+		AREANAME AREANAME
+		DESIGNATE DESIGNATE
+		ISO3 ISO3
+		LON LON
+		LAT LAT
+		CONV_CODE CONV_CODE
+		COUNTRY COUNTRY
+		SITE_CODE SITE_CODE
+		%strRemoteIntAttributeTable%.CONV_FULL CONV_FULL
+		%strRemoteIntAttributeTable%.CRITERIA CRITERIA
+		%strRemoteIntAttributeTable%.AREA_HA AREA_HA
+		%strRemoteIntAttributeTable%.EST_DATE EST_DATE
+		%strRemoteIntAttributeTable%.EXTRA_INFO EXTRA_INFO
+		%strRemoteIntAttributeTable%.SOURCE SOURCE
+		~
+
+	LAYEREXPORT lyrRemoteIntPolyM cover IntPolyM1 poly define
+		AREANAME AREANAME
+		DESIGNATE DESIGNATE
+		ISO3 ISO3
+		LON LON
+		LAT LAT
+		CONV_CODE CONV_CODE
+		COUNTRY COUNTRY
+		SITE_CODE SITE_CODE
+		%strRemoteIntAttributeTable%.CONV_FULL CONV_FULL
+		%strRemoteIntAttributeTable%.CRITERIA CRITERIA
+		%strRemoteIntAttributeTable%.AREA_HA AREA_HA
+		%strRemoteIntAttributeTable%.EST_DATE EST_DATE
+		%strRemoteIntAttributeTable%.EXTRA_INFO EXTRA_INFO
+		%strRemoteIntAttributeTable%.SOURCE SOURCE
+		~
+
+	LAYEREXPORT lyrRemoteNatPolyE cover NatPolyE1 poly define
+		AREANAME AREANAME
+		DESIGNATE DESIGNATE
+		ISO3 ISO3
+		LON LON
+		LAT LAT
+		IUCNCAT IUCNCAT
+		STATUS STATUS
+		SITE_CODE SITE_CODE
+		%strRemoteNatAttributeTable%.ADMIN ADMIN
+		%strRemoteNatAttributeTable%.MANAGEMENT MANAGEMENT
+		%strRemoteNatAttributeTable%.AREA_HA AREA_HA
+		%strRemoteNatAttributeTable%.EST_DATE EST_DATE
+		%strRemoteNatAttributeTable%.OWNER OWNER
+		%strRemoteNatAttributeTable%.NOTES NOTES
+		%strRemoteNatAttributeTable%.SOURCE SOURCE
+		~
+
+	LAYEREXPORT lyrRemoteNatPolyW cover NatPolyW1 poly define
+		AREANAME AREANAME
+		DESIGNATE DESIGNATE
+		ISO3 ISO3
+		LON LON
+		LAT LAT
+		IUCNCAT IUCNCAT
+		STATUS STATUS
+		SITE_CODE SITE_CODE
+		%strRemoteNatAttributeTable%.ADMIN ADMIN
+		%strRemoteNatAttributeTable%.MANAGEMENT MANAGEMENT
+		%strRemoteNatAttributeTable%.AREA_HA AREA_HA
+		%strRemoteNatAttributeTable%.EST_DATE EST_DATE
+		%strRemoteNatAttributeTable%.OWNER OWNER
+		%strRemoteNatAttributeTable%.NOTES NOTES
+		%strRemoteNatAttributeTable%.SOURCE SOURCE
+		~
+
+	APPEND IntPoly2 poly all
+		IntPolyE1
+		IntPolyW1
+		IntPolyM1
+		END
+	CLEAN IntPoly2
+
+	APPEND NatPoly2 poly all
+		NatPolyE1
+		NatPolyW1
+		NatPolyM1
+		END
+	CLEAN NatPoly2
+/* }}} 
+
+/* {{{ Create Box / Clip and CLIP
+	/* {{{ BOXIT!
+	&echo &off
+	GRID
+		&echo &on
+		SETWINDOW -180 %strClipSouthLat% 180 90
+		SETCELL 1
+		clip1 = 1
+		QUIT
+
+	GRIDPOLY clip1 clip2
+	BUILD clip2
+	/* }}} 
+
+	/* Clip
+	CLIP IntPoint1 clip2 IntPoint2 point
+	CLIP NatPoint1 clip2 NatPoint2 point
+/* }}} 
+
+/* {{{ Project to Lambert Az Eq Area and build
+	/* {{{ Projection file
+		&SYSTEM echo INPUT > geo_lambaz.prj
+		&SYSTEM echo PROJECTION GEOGRAPHIC >> geo_lambaz.prj
+		&SYSTEM echo UNITS DD >> geo_lambaz.prj
+		&SYSTEM echo PARAMETERS >> geo_lambaz.prj
+		&SYSTEM echo OUTPUT >> geo_lambaz.prj
+		&SYSTEM echo PROJECTION LAMBERT_AZIMUTH >> geo_lambaz.prj
+		&SYSTEM echo UNITS METERS >> geo_lambaz.prj
+		&SYSTEM echo PARAMETERS >> geo_lambaz.prj
+		&SYSTEM echo 6370997 >> geo_lambaz.prj
+		&SYSTEM echo 0 0 0 >> geo_lambaz.prj
+		&SYSTEM echo 90 0 0 >> geo_lambaz.prj
+		&SYSTEM echo 0 >> geo_lambaz.prj
+		&SYSTEM echo 0 >> geo_lambaz.prj
+		&SYSTEM echo end >> geo_lambaz.prj
+	/* }}}
+
+	PROJECT cover IntPoly2 IntPoly3 geo_lambaz.prj
+	PROJECT cover NatPoly2 NatPoly3 geo_lambaz.prj
+	PROJECT cover IntPoint2 IntPoint3 geo_lambaz.prj
+	PROJECT cover NatPoint2 NatPoint3 geo_lambaz.prj
+	CLEAN IntPoly3
+	CLEAN NatPoly3
+	BUILD IntPoint3 point
+	BUILD NatPoint3 point
+/* }}} 
+
+/* {{{ Load to local SDE
+	/* Items need to be dropped due to conflicts with the database
+	DROPITEM IntPoly3.pat IntPoly3.pat area perimeter IntPoly3# IntPoly3-id
+	DROPITEM NatPoly3.pat NatPoly3.pat area perimeter NatPoly3# NatPoly3-id
+	DROPITEM IntPoint3.pat IntPoint3.pat IntPoint3# IntPoint3-id
+	DROPITEM NatPoint3.pat NatPoint3.pat NatPoint3# NatPoint3-id
+
+	/* Delete existing layers, and don't throw an error if the thing exists
+	&SEVERITY &ERROR &IGNORE
+	DATASET deletelayer connGRIDA %strLocalIntPoint% shape
+	DATASET deletelayer connGRIDA %strLocalIntPoly% shape
+	DATASET deletelayer connGRIDA %strLocalNatPoint% shape
+	DATASET deletelayer connGRIDA %strLocalNatPoly% shape
+	DATASET deletetable connGRIDA %strLocalIntPoint%
+	DATASET deletetable connGRIDA %strLocalIntPoly%
+	DATASET deletetable connGRIDA %strLocalNatPoint%
+	DATASET deletetable connGRIDA %strLocalNatPoly%
+	&SEVERITY &ERROR &ROUTINE bailout
+
+	/* Do the load, create and append the coverages
+	DATASET createlayer connGRIDA %strLocalIntPoly% shape COVERAGE IntPoly3 poly
+	LAYER define lyrLocalIntPoly sde connGRIDA %strLocalIntPoly% shape poly
+	LAYERIOMODE lyrLocalIntPoly loadonly
+	LAYERIMPORT lyrLocalIntPoly cover IntPoly3 poly
+	LAYERIOMODE lyrLocalIntPoly normal
+	DATASET createlayer connGRIDA %strLocalNatPoly% shape COVERAGE NatPoly3 poly
+	LAYER define lyrLocalNatPoly sde connGRIDA %strLocalNatPoly% shape poly
+	LAYERIOMODE lyrLocalNatPoly loadonly
+	LAYERIMPORT lyrLocalNatPoly cover NatPoly3 poly
+	LAYERIOMODE lyrLocalNatPoly normal
+	DATASET createlayer connGRIDA %strLocalIntPoint% shape COVERAGE IntPoint3 point
+	LAYER define lyrLocalIntPoint sde connGRIDA %strLocalIntPoint% shape point
+	LAYERIOMODE lyrLocalIntPoint loadonly
+	LAYERIMPORT lyrLocalIntPoint cover IntPoint3 point
+	LAYERIOMODE lyrLocalIntPoint normal
+	DATASET createlayer connGRIDA %strLocalNatPoint% shape COVERAGE NatPoint3 point
+	LAYER define lyrLocalNatPoint sde connGRIDA %strLocalNatPoint% shape point
+	LAYERIOMODE lyrLocalNatPoint loadonly
+	LAYERIMPORT lyrLocalNatPoint cover NatPoint3 point
+	LAYERIOMODE lyrLocalNatPoint normal
+/* }}} 
+
+/* DONE!
+&SETVAR strMessageToSend = "Finished- %thisFile%"
+&CALL message
+
+/* cleanup (proper exit)
+&CALL niceclose
+&return
+
+/* SUBROUTINES BLOCK/*{{{*/
+
+
+/* {{{ MESSAGE
+/* Sends the text in the %strMessageToSend% string
+&ROUTINE message
+	&SETVAR strSystemInfo = [extract 5 [show &os]] [extract 2 [SHOW &PT ALL]]
+	&IF %hasWindows% eq .TRUE. &THEN &DO
+		/* &SYSTEM net send pc30 --- %strMessageToSend% %strSystemInfo%
+		/* &SYSTEM cat %dirTemp%%thisFile%.log | mail -s %strMessageToSend% -a ahlenius@hisoya.grida.no
+	&END
+	&ELSE &DO
+		/* &SYSTEM cat ~/%thisFile%.log | mail -s %strMessageToSend% ahlenius@hisoya.grida.no
+	&END
+&RETURN
+/* }}} 
+
+/* FINISH IT OFF NICELY/*{{{*/
+&ROUTINE niceclose
+
+	/* Just a date stamp for the log-file
+	&SYSTEM %strDatecmd%
+
+	&ECHO &OFF
+	&MESSAGES &ON
+	&WATCH &OFF
+	&SEVERITY &ERROR &IGNORE
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	LAYER remove lyrRemoteIntPoly
+	LAYER remove lyrRemoteNatPolyE
+	LAYER remove lyrRemoteNatPolyW
+	LAYER remove lyrRemoteNatPolyM
+	LAYER remove lyrEastClip
+	LAYER remove lyrWestClip
+	LAYER remove lyrLocalIntPoint
+	LAYER remove lyrLocalNatPoint
+	LAYER remove lyrLocalSplit
+	dataset disconnect connGRIDA
+	dataset disconnect connGRIDAgeo
+	dataset disconnect connWCMC
+	w /home/ahlenius
+&return
+/*}}}*/
+
+/* In case of error, make sure that the env. is reset
+&ROUTINE bailout
+
+	&ECHO &OFF
+	&MESSAGES &ON
+	&WATCH &OFF
+	&SEVERITY &ERROR &IGNORE
+
+	&SETVAR strMessageToSend = "BAILOUT- %thisFile%"
+	&CALL message
+
+	&CALL niceclose
+	&TYPE
+	&TYPE
+	&TYPE
+&RETURN &ERROR BAILING OUT OF AML
+/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+
+

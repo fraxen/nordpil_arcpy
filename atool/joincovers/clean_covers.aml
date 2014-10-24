@@ -1,0 +1,119 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: CLEAN_COVERS.AML
+/*   Purpose: Clean all covers in a text file list.      
+/*            
+/*--------------------------------------------------------------------------
+/*     Usage: CLEAN_COVERS INIT <covers_file> {dangle_length}  
+/*                         {fuzzy_tolerance} {POLY | LINE}
+/*
+/* Arguments:     covers_file - ASCII text list of coverages (name and path)
+/*              dangle_length - minimum length allowed for dangling arcs
+/*            fuzzy_tolerance - the minimum distance between arc vertices
+/*                POLY | LINE - type of topology to build
+/* 
+/*  Routines:    INIT - check args, set up loop structure
+/*               LOOP - clean current cover, called by file_loop_aml for  
+/*                      every cover/record in file.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*  
+/*   Globals: .clean_covers$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml
+/*--------------------------------------------------------------------------
+/*     Notes: 1. No output cover option. ** INPUT COVERS ARE CLEANED **
+/*            2. Does not check existence of covers. See check_exists.aml.
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up loop structure.
+
+/* Check program
+&if [show program] ne ARC &then
+  &return Run [before %AML$FILE% .aml] from ARC.
+
+/* Extract args.
+&s file = [extract 1 [unquote %arglist%]]
+&s .clean_covers$dangle = [extract 2 [unquote %arglist%]]
+&s .clean_covers$fuzzy = [extract 3 [unquote %arglist%]]
+&s .clean_covers$type = [extract 4 [unquote %arglist%]]
+
+/* Check args.
+&if [null %file%] &then
+  &call usage
+&if [null %.clean_covers$fuzzy%] &then 
+  &s .clean_covers$fuzzy #
+&if [null %.clean_covers$dangle%] &then 
+  &s .clean_covers$dangle #
+&if [null %.clean_covers$type%] &then
+  &s .clean_covers$type POLY
+&else &do
+  &if [upcase %.clean_covers$type%] ne POLY and ~
+      [upcase %.clean_covers$type%] ne LINE &then
+    &call USAGE
+&end
+
+/* Make sure file list exists.
+&if not [exists %file% -file] &then
+  &return Input file %file% not found.
+
+/* Loop through each record/cover and clean.
+&type  Cleaning all coverages with %.clean_covers$type% option:
+&type   dangle: %.clean_covers$dangle%, fuzzy: %.clean_covers$fuzzy%
+&run file_loop_aml %file% [quote clean_covers LOOP] .clean_covers$record
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+/* Clean the current cover.
+clean %.clean_covers$record% %.clean_covers$record% ~
+  %.clean_covers$dangle% %.clean_covers$fuzzy% %.clean_covers$type%
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: CLEAN_COVERS INIT <covers_file> {dangle_length}  
+&type                     {fuzzy_tolerance} {POLY | LINE}
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return &inform
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

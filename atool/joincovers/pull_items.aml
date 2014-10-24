@@ -1,0 +1,201 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: PULL_ITEMS.AML
+/*   Purpose: Use an ASCII list of items as input to the PULLITEMS command.
+/*            
+/*--------------------------------------------------------------------------
+/*     Usage: PULL_ITEMS INIT <info_file> <items_file> {out_info_file}  
+/*                       {SMART | ONLY}
+/*
+/* Arguments:     info_file - ASCII text list of coverages (name and path)
+/*               items_file - list of item names in some order
+/*            out_info_file - original table not modified
+/*                    SMART - assumes <info_file> is a standard coverage 
+/*                            attribute table. Internal items are retained.
+/*                            <items_file> should contain only user defined
+/*                            items.
+/*                     ONLY - only items in <items_file> will be pulled.
+/* 
+/*  Routines:    INIT - check args, set up loop structure
+/*               LOOP - send each item to PULLITEMS command, called by 
+/*                      file_loop_aml for every item/record in file.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*  
+/*   Globals: .pull_items$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml
+/*--------------------------------------------------------------------------
+/*     Notes: 1. Maximum 100 items (PULLITEMS).
+/*            2. Does not verify the existence of items, see find_items.aml 
+/*            and/or add_items.aml
+/*            3. The PULLITEMS command in older versions of ARC does not  
+/*            suppport long coverage names and may cause this AML  to crash.
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up loop structure.
+
+/* Check program
+&if [show program] ne ARC &then
+  &return Run [before %AML$FILE% .aml] from ARC.
+
+/* Extract args.
+&s info = [extract 1 [unquote %arglist%]]
+&s itemfile = [extract 2 [unquote %arglist%]]
+&s outinfo = [extract 3 [unquote %arglist%]]
+&s mode = [extract 4 [unquote %arglist%]]
+
+/* Check args.
+&if [null %info%] or [null %itemfile%] &then
+  &call usage
+
+&if [null %mode%] &then
+  &s mode = SMART
+&s mode = [upcase %mode%]
+&else &do
+  &if %mode% ne SMART and %mode% ne ONLY &then
+    &call USAGE
+&end
+
+/* Make sure item list exists.
+&if not [exists %itemfile% -file] &then
+  &return Input file %itemfile% not found.
+  
+/* Make sure table list exists.
+&if not [exists %info% -info] &then
+  &return Input table %info% not found.
+
+/* Verify output table does not exist.
+&if not [null %outinfo%] &then &do
+  &if [exists %outinfo% -info] and %info% ne %outinfo% &then
+    &return Output table %outinfo% already exists.
+&end
+
+/* If 'SMART' is used, determine internal items.  
+/* REPORT if non standard info file
+&if %mode% = SMART &then &do
+  &s ext = [upcase [after %info% . ]]
+  &s cover = [entryname [before %info% . ]]
+  &if [substr %ext% 1 3] = 'TAT' &then &do
+    &s subclass = [after %ext% TAT]
+    &s list %subclass%# %subclass%-id
+    &s sub
+  &end
+  &if [substr %ext% 1 3] = 'RAT' &then &do
+    &s subclass = [after %ext% RAT]
+    &s list %subclass%# %subclass%-id
+    &s sub
+  &end
+  &if [substr %ext% 1 3] = 'SEC' &then &do
+      &s subclass = [after %ext% SEC]
+      &s list = routelink# arclink# f-meas t-meas f-pos t-pos ~
+                %subclass%# %subclass%-id 
+      &s sub
+  &end
+  &if [substr %ext% 1 3] = 'PAT' and [length %ext%] gt 3 &then &do
+      &s subclass = [after %ext% PAT]
+      &s list area perimeter %subclass%# %subclass%-id
+      &s sub
+  &end
+  &if not [variable sub] &then &do
+    &select %ext%
+      &when PAT
+        &s list = area perimeter
+      &when AAT
+        &s list = fnode# tnode# lpoly# rpoly# length
+      &when NAT
+        &s list = arc#
+      &when TIC
+        &s list = idtic xtic ytic
+      &otherwise
+        &do
+          &type  %ext% is not a standard attribute table.
+          &call USAGE
+        &end
+    &end
+  &end
+&end
+
+/* Check number of items.
+&run file_count_records init %itemfile% .pull_items$reccount
+&if %.pull_items$reccount% gt 100 &then &do
+  &call EXIT
+  &return Maximum number of items is 100.
+&end
+
+&s out %info%
+&if not [null %outinfo%] &then
+  &s out %outinfo%
+
+/* PULL.  Include internals if 'SMART' is used.
+&type  Pulling items from %info% to %out%
+pullitems %info% %out%
+&if %mode% = SMART &then &do
+  &if %ext% = TIC or [variable sub] &then &do
+    &do intitem &list %list%
+      %intitem%
+    &end
+  &end
+  &else &do intitem &list %list% %cover%# %cover%-id
+    %intitem%
+  &end
+&end
+
+/* Loop through each record/item and send to pullitems.
+&run file_loop_aml %itemfile% [quote pull_items LOOP] .pull_items$record
+end
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+/* Send current item to PULLITEMS dialog.
+%.pull_items$record%
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: PULL_ITEMS INIT <info_file> <items_file> {out_info_file} 
+&type                   {SMART | ONLY}
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

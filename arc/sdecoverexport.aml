@@ -1,0 +1,72 @@
+/* sdecoverexport.aml
+/* Wrapper for sderaster.exe
+
+/* Hugo Ahlenius, UNEP/GRID-Arendal
+/* Last Modified: 2002-Nov-12 11:16 (HA)
+
+/* HISTORY
+/* 2002-Nov-12 -- Created the file(HA)
+
+&ARGS strShapeName strCover strCoverClass strShape strSDEdatabase
+&s thisFile = sdecoverexport
+/* STANDARD BLOCK/*{{{*/
+	&severity &error &routine bailout
+	&WATCH %temp%\%thisFile%.log
+	&amlpath %home%/aml
+/*/*}}}*/
+&IF [NULL %strShapeName%] OR [NULL %strCover%] &THEN &GOTO USAGE
+&SETVAR strPathSDEbin c:\program\gis\arcgis\arcexe81\arcsde\sqlexe\bin
+&SETVAR strSDEinstance esri_sde
+&SETVAR strSDEpassword CinderCone
+&SETVAR strSDEserver utnes.grida.no
+&IF [NULL %strSDEdatabase%] &THEN &SETVAR strSDEdatabase sde_world_geo
+&SETVAR strSDEuser %strSDEdatabase%
+&IF [NULL %strShape%] &THEN &SETVAR strShape shape
+&IF [NULL %strCoverClass%] &THEN &SETVAR strCoverClass poly
+
+&SYSTEM %strPathSDEbin%\sde2cov.exe -o create -l %strSDEdatabase%.%strSDEdatabase%.%strShapeName%,%strShape% -f %strCover%,%strCoverClass% -a all -i %strSDEinstance% -s %strSDEserver% -D %strSDEdatabase% -u %strSDEdatabase% -p %strSDEpassword%
+
+/* cleanup (proper exit)
+&CALL niceclose
+&RETURN
+
+/* USAGE
+&LABEL USAGE
+	&WATCH &OFF
+	&ty
+	&ty USAGE
+	&ty SDECOVEREXPORT featurename outcover {poly|point|line} {shape|Shape} {database}
+&RETURN
+
+ /* SUBROUTINES BLOCK/*{{{*/
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&WATCH &OFF
+	&SEVERITY &ERROR &FAIL
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	layer remove inLayer
+	layer remove bound
+	dataset disconnect connUtnes
+	&echo &off
+	&messages &on
+	&return
+	/* Done!
+	/*}}}*/
+
+	/* In case of error, make sure that the env. is reset
+	&routine bailout
+	&call niceclose
+	&type
+	&type
+	&type
+	&return &error Bailing out of AML
+	/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+
+

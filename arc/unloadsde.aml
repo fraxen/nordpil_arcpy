@@ -1,0 +1,103 @@
+/* sdeunload.aml
+/* Hugo Ahlenius, UNEP/GRID-ARendal
+/* Last Modified: 2003-Nov-28 15:50 (HA)
+/*
+/* HISTORY
+/* 2003-Nov-14 -- Modified the file to work fine under UNIX(HA)
+/* 2003-Nov-14 -- Fixed a problem with ArcInfo 8.3 and using layersearch(HA)
+
+&ARGS inDatabase inFeature inClass inTarget inClip
+&SETVAR thisFile = [BEFORE %AML$FILE% '.aml']
+/* STANDARD BLOCK/*{{{*/
+	&SEVERITY &ERROR &ROUTINE bailout
+	&SETVAR hasWindows = .FALSE.
+	&IF "[BEFORE [SHOW &OS] ,]" eq "Windows_NT" &THEN &SETVAR hasWindows = .TRUE.
+	&IF %hasWindows% &THEN &DO
+		&WATCH %TEMP%\%thisFile%.log
+		&AMLPATH %home%/aml
+		&END 
+	&ELSE &DO
+		&WATCH %TEMP%/%thisFile%.log
+		&AMLPATH ~/aml
+	&END
+	dataset disconnect connUtnes
+/*/*}}}*/
+&IF [NULL %inDatabase%] | [quote %inDatabase%] eq '#' &THEN &s inDatabase = sde_world_geo
+&IF [NULL %inClass%] | [quote %inClass%] eq '#' &THEN &s inClass = poly
+&IF [NULL %inFeature%] &THEN &GOTO USAGE
+&IF [NULL %inTarget%] | [quote %inTarget%] eq '#' &THEN &S inTarget = %inFeature%
+
+DATASET connect connUtnes utnes.grida.no 5151 %inDatabase% CinderCone %inDatabase%
+LAYER remove inLayer
+LAYER remove bound
+
+/* {{{ Define Layer, and capture and try again if it doesn't work with non-capital s
+	&SEVERITY &ERROR &ROUTINE tryCapitalS
+	layer define inLayer sde connUtnes %inDatabase%.%inDatabase%.%inFeature% shape %inClass%
+	&GOTO GOON /* It worked ok, fine -- now go on
+
+	/* Shoot, didn't work -- try capital s	
+	&ROUTINE tryCapitalS
+	&SEVERITY &ERROR &ROUTINE bailout
+	layer define inLayer sde connUtnes %inDatabase%.%inDatabase%.%inFeature% Shape %inClass%
+	&RETURN
+	&LABEL GOON
+/* }}} 
+
+
+&IF NOT [NULL %inClip%] &THEN &DO
+	layer define bound coverage %inClip% poly
+	layersearch inLayer envelope layer bound
+&END
+
+layerexport inLayer cover %inTarget% %inClass%
+layer remove bound
+layer remove inLayer
+
+
+
+
+
+/* cleanup (proper exit)
+&CALL niceclose
+&RETURN
+
+/* USAGE
+&LABEL USAGE
+	&CALL niceclose
+	&ty
+	&ty USAGE
+	&ty UNLOADSDE {Database/User} FeatureClass {class} {Coverage} {bound}
+&RETURN
+
+ /* SUBROUTINES BLOCK/*{{{*/
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&WATCH &OFF
+	&SEVERITY &ERROR &FAIL
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	layer remove inLayer
+	layer remove bound
+	dataset disconnect connUtnes
+	&echo &off
+	&messages &on
+	&return
+	/* Done!
+	/*}}}*/
+
+	/* In case of error, make sure that the env. is reset
+	&routine bailout
+	&call niceclose
+	&type
+	&type
+	&type
+	&return &error Bailing out of AML
+	/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+

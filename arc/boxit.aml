@@ -1,0 +1,81 @@
+/* boxit.aml
+/* Hugo Ahlenius, UNEP/GRID-Arendal
+/* Last Modified: 2003-Jul-01 09:36 (HA)
+/* $Header: /config/config/aml/arc/boxit.aml,v 1.4 2003/07/30 08:47:07 hugo Exp $
+/* HISTORY
+/* /* 2003-Jul-01 -- Now calculates cellsize to 500 cells(HA)
+
+&ARGS inXmin inYmin inXmax inYmax inOutCov
+&s thisFile = boxit
+/* STANDARD BLOCK/*{{{*/
+	&severity &error &routine bailout
+	&WATCH %temp%\%thisFile%.log
+	dataset disconnect connUtnes
+	&amlpath %home%/aml
+/*/*}}}*/
+&IF [NULL %inXmin%] OR [NULL %inYmin%] OR [NULL %inXmax%] OR [NULL %inYmax%] &THEN &GOTO USAGE
+&IF [NULL %inOutCov%] &THEN &s inOutCov := boxit1
+
+&if [EXISTS temp -workspace] &THEN rm -r -f temp
+cw temp
+w temp
+
+&echo &on
+grid
+	setwindow %inXmin% %inYmin% %inXmax% %inYmax%
+	setcell [CALC ( %inXmax% - %inXmin% ) / 500]
+	boxit1 = 1
+	quit
+
+gridpoly boxit1 boxit2
+build boxit2
+
+copy boxit2 ../%inOutCov%
+
+
+
+
+/* cleanup (proper exit)
+&CALL niceclose
+&RETURN
+
+/* USAGE
+&LABEL USAGE
+	&WATCH &OFF
+	&ty
+	&ty USAGE
+	&ty BOXIT xmin ymin xmax ymax {OutCoverage}
+&RETURN
+
+ /* SUBROUTINES BLOCK/*{{{*/
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&WATCH &OFF
+	&SEVERITY &ERROR &FAIL
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	w ..
+	layer remove inLayer
+	layer remove bound
+	dataset disconnect connUtnes
+	&echo &off
+	&messages &on
+	&return
+	/* Done!
+	/*}}}*/
+
+	/* In case of error, make sure that the env. is reset
+	&routine bailout
+	&call niceclose
+	&type
+	&type
+	&type
+	&return &error Bailing out of AML
+	/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+

@@ -1,0 +1,73 @@
+/* sdeload.aml
+/* Hugo Ahlenius
+/* last modified: 2001-Oct-29 13:38
+
+&ARGS inFlag inDatabase inCov inClass inTarget
+&s thisFile = sdeload
+/* STANDARD BLOCK/*{{{*/
+	&ECHO &ON
+	&severity &error &routine bailout
+	&WATCH %thisFile%.log
+	dataset disconnect connUtnes
+	&amlpath %home%/aml
+/*/*}}}*/
+&IF [NULL %inFlag%] | [quote %inFlag%] eq '#' &THEN &s inFlag = create
+&IF [NULL %inDatabase%] | [quote %inDatabase%] eq '#' &THEN &s inDatabase = sde_world_geo
+&IF [NULL %inClass%] | [quote %inClass%] eq '#' &THEN &s inClass = poly
+&IF [NULL %inCov%] | NOT [EXIST %inCov% -cover] &THEN &GOTO USAGE
+&IF [NULL %inTarget%] | [quote %inClass%] eq '#' &THEN &S inTarget = %inCov%
+
+dataset connect connUtnes utnes.grida.no 5151 %inDatabase% CinderCone %inDatabase%
+layer remove inLayer
+&IF [quote %inFlag%] eq 'create' &THEN ~
+	dataset createlayer connUtnes %inTarget% shape COVERAGE %inCov% %inClass%
+
+layer define inLayer sde connUtnes %inTarget% shape %inClass%
+layerimport inLayer cover %inCov% %inClass%
+
+
+
+
+
+/* cleanup (proper exit)
+&CALL niceclose
+&RETURN
+
+/* USAGE
+&LABEL USAGE
+	&CALL niceclose
+	&ty
+	&ty USAGE
+	&ty LOADSDE <create | append> {Database/User} <coverage> {class}
+&RETURN
+
+ /* SUBROUTINES BLOCK/*{{{*/
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&WATCH &OFF
+	&SEVERITY &ERROR &FAIL
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	layer remove inLayer
+	dataset disconnect connUtnes
+	&echo &off
+	&messages &on
+	&return
+	/* Done!
+	/*}}}*/
+
+	/* In case of error, make sure that the env. is reset
+	&routine bailout
+	&call niceclose
+	&type
+	&type
+	&type
+	&return &error Bailing out of AML
+	/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+

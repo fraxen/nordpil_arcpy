@@ -1,0 +1,179 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS- Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: JCOVS1A.AML
+/*   Purpose: Provide various methods to add multiple coverages to
+/*            Step 1 list.
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*&run
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT   /*  {'position'} {'stripe'} {MODELESS | MODAL}
+/*-----------
+/* Initialize tool interface
+/*
+&set position = [extract 1 [unquote %arglist%]]
+&set stripe   = [extract 2 [unquote %arglist%]]
+&set modality = [extract 3 [unquote %arglist%]]
+&if [null %position%] or %position%_ = #_ &then 
+  &set position = &cc &screen &cc
+&if [null %stripe%] or %stripe%_ = #_ &then 
+  &set stripe = JoinCovers - Add Coverages 
+&if [null %modality%] or %modality%_ = #_ &then
+  &set mode =
+&else
+  &if [translate %modality%] = MODAL &then
+    &set mode = &modal
+  &else
+    &set mode = 
+/*
+/* Issue thread delete self if thread depth = 2 and input is tty 
+&if [show &thread &depth] = 2 and [extract 1 [show &thread &stack]] = tty &then
+  &set launch = &thread &delete &self 
+&else 
+  &set launch
+/*
+&if [show &thread &exists tool$jcovs1a] &then
+   &thread &delete tool$jcovs1a
+&if not [variable .jcovs1a$shortmethod] &then &do
+  &s .jcovs1a$shortmethod = all
+  &s .jcovs1a$curdir = [show workspace]
+  &s .jcovs1a$spec = *
+&end
+&call UPDATE_LIST
+&thread &create tool$jcovs1a %mode% ~
+  &menu jcovs1a ~
+  &position [unquote %position%] ~
+  &stripe [quote [unquote %stripe%]] ~
+  &pinaction '&run jcovs1a exit'
+%launch%
+/*
+&return
+
+/*-------------
+&routine BROWSE
+/*-------------
+
+&if %.jcovs1a$shortmethod% = file &then
+  &r getfile init .jcovs1a$browsefile
+&else
+  &r getcover init .jcovs1a$browsefile
+&if not [null %.jcovs1a$browsefile%] &then &do
+  &s .jcovs1a$curdir [dir %.jcovs1a$browsefile%]
+  &call UPDATE_LIST  /* needed?
+&end
+
+/*
+&return
+
+/*------------------
+&routine UPDATE_LIST
+/*------------------
+/* Evaluate current variables and rebuild file list.
+/* The list of files/covers meeting settings is stored
+/* in the sratchfile with name .jcovs1a$availcovsfile.
+&select %.jcovs1a$shortmethod%   /****deal with library option.
+  &when all
+    &do
+      &s .jcovs1a$type = cover -all
+      &s .jcovs1a$showstring = Add covers of type:
+      &s .jcovs1a$availstring = These covers will be added:
+    &end
+  &when selected
+    &do
+      &s .jcovs1a$type = cover -all
+      &s .jcovs1a$showstring = Show covers of type:
+      &s .jcovs1a$availstring = Select cover to add:
+    &end    
+  &when file
+    &do
+      &s .jcovs1a$type = file
+      &s .jcovs1a$showstring = Show files of type:
+      &s .jcovs1a$availstring = Select file with cover list:
+    &end
+&end
+&s .jcovs1a$filelist [scratchname -suffix [before %AML$FILE% .aml]]
+&if [null %.jcovs1a$spec%] &then
+  &s .jcovs1a$spec *
+&s trashvar [listfile [joinfile %.jcovs1a$curdir% %.jcovs1a$spec% -file] ~
+   -%.jcovs1a$type% -full %.jcovs1a$filelist%]
+
+&return
+
+/*---------
+&routine OK
+/*---------
+/* Close the form and append the added coverages to the file list.
+&select %.jcovs1a$shortmethod%
+  &when selected
+    &r FILE_APPEND_RECORD %.jcovs1$filelist% %.jcovs1a$current% # search
+  &when all
+    &do
+      &run file_count_records init %.jcovs1$filelist% .jcovs1a$tmpcnt
+      &if %.jcovs1a$tmpcnt% gt 0 &then
+        &r FILE_APPEND_FILE init %.jcovs1$filelist% %.jcovs1a$filelist% # search
+      &else &do
+        &s delstat [delete %.jcovs1$filelist%]
+        &s renstat [rename %.jcovs1a$filelist% %.jcovs1$filelist%]
+      &end 
+    &end
+  &when file
+    &do
+      &run file_count_records init %.jcovs1$filelist% .jcovs1a$tmpcnt
+      &if %.jcovs1a$tmpcnt% gt 0 &then
+        &r FILE_APPEND_FILE init %.jcovs1$filelist% %.jcovs1a$current% # search
+      &else &do
+        &s delstat [delete %.jcovs1$filelist%]
+        &s costat [copy %.jcovs1a$current% %.jcovs1$filelist%]
+      &end 
+    &end
+&end
+&call EXIT
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: JCOVS1A INIT {'''position'''} {'''stripe'''} {MODELESS | MODAL}
+&type Usage
+&return &inform 
+
+/*-------------
+&routine CANCEL
+/*-------------
+&run joincovers CANCEL
+&if %.joincovers$cancel% &then
+  &call EXIT
+&return
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&if [show &thread &exists tool$jcovs1a] &then 
+  &thread &delete tool$jcovs1a
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return
+
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+/* &call exit
+&return &warning An error has occurred in routine: %routine% (JCOVS1A.AML).
+

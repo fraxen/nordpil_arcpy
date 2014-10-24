@@ -1,0 +1,188 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: DESCRIBE_COVERS.AML
+/*   Purpose: Describe all coverages in a text file list and set variables
+/*            of the form .<prefix>$<record>|<&describe var> where record is
+/*            the name (and path) of the cover, and <&describe var> is any
+/*            DSC or PRJ standard variable (prefix$/data/cov1|DSC$cover).
+/*
+/*--------------------------------------------------------------------------
+/*     Usage: DESCRIBE_COVERS INIT <covers_file> <prefix>
+/*
+/* Arguments: covers_file - ASCII text list of coverages (name and path)
+/*                 prefix - prefix for all global describe variables
+/* 
+/*  Routines:    INIT - check args, set up loop structure
+/*               LOOP - run &describe for current cover and set unique vars,
+/*                      called by file_loop_aml for every record in file.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*  
+/*   Globals: .describe_covers$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml
+/*--------------------------------------------------------------------------
+/*     Notes: 1. Does not check existence of covers. See check_exists.aml.
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up loop structure.
+
+/* Extract args.
+&s file = [extract 1 [unquote %arglist%]]
+&s .describe_covers$prefix = [extract 2 [unquote %arglist%]]
+
+&if [null %file%] or [null %.describe_covers$prefix%] &then
+  &call usage
+  
+/* Make sure file list exists.
+&if not [exists %file% -file] &then
+  &return Input file %file% not found.
+
+&run file_loop_aml %file% [quote describe_covers LOOP] ~
+ .describe_covers$record
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+/* Check current cover/record for existence.
+
+&type  Setting variables for %.describe_covers$record%...
+&describe %.describe_covers$record%
+
+/* Convert DSC and PRJ variables to %record% variables
+&do var &list  ~
+  AAT_BYTES ~/* length of AAT records in bytes
+  ANNOS ~/*   number of annotations
+  ANNOTATIONSUBCLASSES ~/*number of annotation subclasses in the cover
+  ANNOTATIONNAMES ~/* (list of) names of annotation subclasses in the cover
+  ANNOTATIONS ~/*(list of) number of annotations in each subclass
+  ARCS ~/*  number of arcs
+  COVER ~/* coverage name
+  DANGLE ~/*  dangle distance
+  FULL_COVER ~/*full coverage name
+  FUZZY ~/* fuzzy tolerance
+  INDEX_ANNOS ~/*.TRUE. if a spatial index of coverage annotation with (blank) subclass exists; .FALSE. if not
+  INDEX_ANNOTATIONS ~/*list of logical flags for each annotation subclass: .TRUE. if a spatial index of an annotation subclass exists, .FALSE. if not
+  INDEX_ARCS ~/*.TRUE. if a spatial index of coverage arcs exists; .FALSE. if not
+  INDEX_POINTS ~/*.TRUE. if a spatial index of coverage points exists; .FALSE. if not
+  INDEX_POLYGONS ~/*.TRUE. if a spatial index of coverage polygons exists; .FALSE. if not
+  INDEX_REGIONS ~/*(list of) logical flags for each region subclass indicating whether that subclass is spatially indexed; .TRUE. if the subclass has a spatial index, .FALSE. if not
+  LINKS ~/* number of links
+  MAX_NODE ~/*  highest node number (set only by the ARC command DESCRIBE)
+  NAT_BYTES ~/* length of NAT records in bytes
+  PAT_BYTES ~/* length of polygon PAT records in bytes
+  POINTS ~/*  number of points
+  POLYGONS ~/*  number of polygons
+  PRECISION ~/* precision of the coverage
+  QDANGLE_VERIFIED ~/*.TRUE. if coverage processed with dangle distance; .FALSE. if not
+  QEDIT ~/* .TRUE. if coverage topology has been edited; FALSE if not
+  QFUZZY_VERIFIED ~/*.TRUE. if coverage processed with fuzzy tolerance; .FALSE. if not
+  QTOPOLOGY ~/* .TRUE. if polygon topology is present; .FALSE. if not
+  REGIONNAMES ~/* (list of) names of region subclasses in the coverage
+  REGIONS ~/*   (list of) number of regions in each subclass
+  REGIONSUBCLASSES ~/*number of region subclasses in the coverage
+  REGION_PAT_BYTES ~/*(list of) length of region subclass PAT records for each subclass
+  ROUTENAMES ~/* (list of) names of route systems in the coverage
+  ROUTESYSTEMS ~/* number of route systems in the coverage
+  ROUTES ~/*  (list of) number of routes in each subclass
+  SECTIONS ~/*  (list of) number of sections in each subclass
+  SEGMENTS ~/*  number of segments
+  TICS ~/*  number of tics
+  TOPOLOGY_POLYGONS ~/*(list of) integer flags for each subclass: 0 - contains no polygons; 1 - polygon topology is preliminary; 2 - polygon topology is built
+  TOPOLOGY_REGIONS ~/* (list of) integer flags for each subclass: 0 - contains no regions; 1 - region topology is preliminary; 2 - region topology is built
+  XAT_BYTES ~/* length of point PAT records in bytes
+  XMAX ~/*    maximum X coordinate
+  XMIN ~/*    minimum X coordinate
+  YMAX ~/*  maximum Y coordinate
+  YMIN ~/*  minimum Y coordinate
+  NAME ~/*  projection name (e.g. UTM)
+  DATUM ~/*     datum of the projection
+  UNITS ~/*     units of the projection
+  DENSIFY ~/* distance
+  FIPSZONE ~/*  zone number 
+  GENERALIZE ~/*distance
+  QUADRANT ~/*  quadrant 
+  SPHEROID ~/*  spheroid name
+  XSHIFT ~/*  distance
+  YSHIFT ~/*  distance
+  ZONE ~/*  zone number
+  ZUNITS ~/*  units
+  SP1 ~/* first standard parallel
+  SP2 ~/* second standard parallel
+  CM ~/*  central meridian
+  FE ~/*  false easting units
+  FN ~/*  false northing units
+  LATORIG ~/* latitude of origin
+  LONGORIG ~/*  longitude of origin
+  TRUELAT ~/* latitude of true scale
+  SCALE ~/* scale
+  TYPE ~/*  type (e.g. 2 - CYLINDRICAL, Type 2)
+  RADIUS ~/*  radius above reference
+  HEIGHT ~/*  height above reference
+  LONG1 ~/* longitude of point 1
+  LAT1 ~/*  latitude of point 1 
+  LONG2 ~/* longitude of point 2
+  LAT2 ~/*  latitude of point 2 
+  LONG3 ~/* longitude of point 3
+  LAT3 ~/*  latitude of point 3
+  AZIMUTH ~/* angle of azimuth
+  VEHICLE ~/* vehicle id number
+  PATH /* orbital path number
+
+  &if [variable DSC$%var%] &then
+    &s .%.describe_covers$prefix%$%.describe_covers$record%|DSC$%var% ~
+       = [value DSC$%var%]
+  &else
+    &s .%.describe_covers$prefix%$%.describe_covers$record%|PRJ$%var% ~
+       = [value PRJ$%var%]
+
+&end
+
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: DESCRIBE_COVERS INIT <covers_file> <prefix>
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return &inform
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

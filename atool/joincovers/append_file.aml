@@ -1,0 +1,127 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: APPEND_FILE .AML
+/*   Purpose: Pass all coverages in a text file list to the APPEND command.
+/*            
+/*--------------------------------------------------------------------------
+/*     Usage: APPEND_FILE INIT <covers_file> <out_cover> {NOTEST | 
+/*                        template_cover | feature_class... feature_class} 
+/*                        {NONE | FEATURES | TICS | ALL}
+/*
+/* Arguments: covers_file - ASCII text list of coverages (name and path)
+/*              (All other arguments are from the APPEND command.
+/*               See ARCDOC for a description of these arguments.)
+/* 
+/*  Routines:    INIT - check args, set up loop structure
+/*               LOOP - Send the current cover to APPEND, called by
+/*                      file_loop_aml for every cover/record in file.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*  
+/*   Globals: .append_file$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml
+/*--------------------------------------------------------------------------
+/*     Notes: 1. Does not check existence of covers. See check_exists.aml.
+/*            2. All arguments passes to APPEND without error checking.
+/*            3. Assumes all input covers have been checked and coverage  
+/*               variability has been taken care of.
+/*            4. ONLY sends covers in the text list to APPEND. (thats it)
+/*            5. If APPEND rejects any coverages the program continues and
+/*               will leave out those coverages - check screen output.
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up loop structure.
+
+/* Check program
+&if [show program] ne ARC &then
+  &return Run [before %AML$FILE% .aml] from ARC.
+
+/* Extract args.
+&s file = [extract 1 [unquote %arglist%]]
+&s outcov = [extract 2 [unquote %arglist%]]
+&s options = [subst %arglist% %file%]
+&s options = [subst %options% %outcov%]
+
+/* Check file args.
+&if [null %file%] or [null %outcov%] &then
+  &call USAGE
+
+/* Make sure file list exists.
+&if not [exists %file% -file] &then
+  &return Input file %file% not found.
+
+/* Make sure output cover does not exist.
+&if [exists %outcov% -cover] &then 
+  &return Output cover %outcov% already exists.
+
+/* Start APPEND.
+&type  Using APPEND arguments: %outcov% [unquote [unquote %options%]]
+&type
+append %outcov% [unquote [unquote %options%]]
+
+/* Loop through each record/cover and pass to APPEND dialog.
+&run file_loop_aml %file% [quote append_file LOOP] .append_file$record
+
+/* End the APPEND dialog.
+end
+
+&if [exists %outcov% -cover] &then
+  &type  Created %outcov%
+&else
+  &type  Problem with APPEND.
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+/* Pass the current record/cover to APPEND.
+%.append_file$record%
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: APPEND_FILE INIT <covers_file> <out_cover> {NOTEST | 
+&type                    template_cover | feature_class... feature_class} 
+&type                    {NONE | FEATURES | TICS | ALL}
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return &inform
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit
+&return &error An error has occurred in [before %AML$FILE% .aml].
+

@@ -1,0 +1,115 @@
+/* {{{ COMMENTS
+/* fixdem.aml
+/* Hugo Ahlenius, UNEP/GRID-ARendal
+/*
+/* Recalculate unsigned 16-bit DEMs
+/*
+/* --- {{{ HISTORY --------------------------
+/*		$Log: fixdem.aml,v $
+/*		Revision 1.1  2006/09/12 09:03:29  ahlenius
+/*		no message
+/*		
+/* --- }}} ----------------------------------
+/* }}} 
+
+&ARGS inGrid outGrid doDebug
+&SETVAR thisFile = [BEFORE %AML$FILE% '.aml']
+&SETVAR Usage = fixdem inGrid outGrid
+&SETVAR useTempWS = .FALSE.
+
+/* {{{ DEBUG ARGS
+	&IF NOT [NULL %doDebug%] &THEN &ECHO &ON
+/* }}} 
+
+/* {{{ STANDARD BLOCK
+	&SEVERITY &ERROR &ROUTINE bailout
+	&SETVAR doCW = .TRUE.
+	&SETVAR hasWindows = .FALSE.
+	&IF "[BEFORE [SHOW &OS] ,]" eq "Windows_NT" &THEN &SETVAR hasWindows = .TRUE.
+	&IF %hasWindows% &THEN &DO
+		&WATCH %TEMP%\%thisFile%.log
+		&AMLPATH %home%/aml
+		&ATOOL %home%/aml
+		&SETVAR dirchar = \
+		&END 
+	&ELSE &DO
+		&WATCH %TEMP%/%thisFile%.log
+		&AMLPATH ~/aml
+		&ATOOL ~/aml
+		&SETVAR dirchar = /
+	&END
+	&PT &ON
+	&SYSTEM timer start
+	dataset disconnect connUtnes
+
+/* 	/* {{{ CREATE WS
+/* 	&IF %doCW% & %useTempWS% &THEN &DO /* If run with debug args
+/* 		&if [EXISTS tempws_%thisFile% -workspace] &THEN rm -r -f tempws_%thisFile%
+/* 		ARC cw tempws_%thisFile%
+/* 	&END
+/* 	ARC w tempws_%thisFile%
+/* 	/* }}} 
+/* }}}
+
+/* {{{ SETUP WORK ENVIRONMENT
+	&IF [NULL %inGrid%] | [NULL %outGrid%] &THEN &GOTO USAGE
+/* }}} 
+
+/* ACTUAL CODE STARTS HERE ----------------------------
+	outGrid = CON (inGrid GT 20000, inGrid - 65535, inGrid)
+/* ACTUAL CODE ENDS HERE ----------------------------
+
+/* {{{ SUB-ROUTINES
+/* }}} 
+
+/* {{{ STANDARD SUB ROUTINES
+
+	/* {{{ CLEANUP (PROPER EXIT)
+	&CALL niceclose
+	&RETURN
+	/* }}} 
+
+	/* {{{ USAGE
+	&LABEL USAGE
+		&CALL niceclose
+		&TYPE
+		&TYPE USAGE
+		&TYPE %Usage%
+		&TYPE
+	&RETURN
+	/* }}} 
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&ECHO &OFF
+	&WATCH &OFF
+	&MESSAGES &ON
+	&WATCH &OFF
+	&SYSTEM timer stop
+	&SEVERITY &ERROR &FAIL
+	&IF %:program% = PROJECT &THEN end
+	&IF %:program% <> GRID &THEN quit
+	layer remove inLayer
+	layer remove bound
+	dataset disconnect connUtnes
+	&ECHO &OFF
+	&MESSAGES &ON
+	&RETURN
+	/* Done!
+	/*}}}*/
+
+	/* {{{ BAILOUT / ERROR HANDLING
+	/* In case of error, make sure that the env. is reset
+	&ROUTINE bailout
+	&CALL niceclose
+	&TYPE
+	&TYPE
+	&TYPE
+	&RETURN &ERROR Bailing out of AML
+	/* end error handling
+	/* /* }}} 
+
+/*}}}*/
+
+
+/*

@@ -1,0 +1,128 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: FILE_SUBTRACT_FILE.AML
+/*   Purpose: Remove all records in one file from another.
+/*            
+/*--------------------------------------------------------------------------
+/*     Usage: FILE_SUBTRACT_FILE INIT <file> <subtract_file> {out_file}
+/*                               {variable_name}
+/*
+/* Arguments:          file - the base file
+/*            subtract_file - the file containing records to remove
+/*                            from <file> or {out_file}
+/*                 out_file - optional, original file will not be modified
+/*            variable_name - variable returned as
+/*                            true -> all records found and removed
+/*                            false -> one or more records not removed
+/*
+/*  Routines:    INIT - check args, set up loop structure
+/*               LOOP - delete the currrent record.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling.
+/*
+/*   Globals: .file_subtract_file$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_search_record.aml
+/*            file_loop_aml.aml
+/*            file_delete_record.aml
+/*--------------------------------------------------------------------------
+/*     Notes:
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+
+/* Extract args.
+&s file = [extract 1 [unquote %arglist%]]
+&s subtract_file = [extract 2 [unquote %arglist%]]
+&s out_file = [extract 3 [unquote %arglist%]]
+&s .file_subtract_file$var = [extract 4 [unquote %arglist%]]
+
+/* Check arguments
+&if [null %file%] or [null %subtract_file%] &then
+  &call usage
+&if not [null %.file_subtract_file$var%] &then &do
+  &if %.file_subtract_file$var%_ = #_ &then
+    &s .file_subtract_file$var = .file_delete_record$trash
+&end
+&else
+  &s .file_subtract_file$var = .file_delete_record$trash
+
+/* Verify file exist.
+&do afile &list %file% %subtract_file%
+  &if not [exists %afile% -file] &then
+    &return The file %afile% does not exist.
+&end
+
+/* Verify output file does not exist.
+&if not [null %out_file%] &then &do
+  &if %out_file%_ ne #_ &then &do
+    &if [exists %out_file% -file] &then
+      &return Output file %out_file% already exists.
+  &end 
+&end
+
+/* Create output file if needed.
+&s .file_subtract_file$target %file%
+&if not [null %out_file%] &then &do
+  &if %out_file%_ ne #_ &then &do
+    &s copystat [copy %file% %out_file% -file]
+    &s .file_subtract_file$target %out_file%
+  &end
+&end
+
+&run file_loop_aml %subtract_file% [quote file_subtract_file LOOP] ~
+  .file_subtract_file$looprecord
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+&run file_delete_record %.file_subtract_file$target% ~
+ %.file_subtract_file$looprecord% # %.file_subtract_file$var%
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: FILE_SUBTRACT_FILE INIT <file> <subtract_file> {out_file}
+&type                           {variable_name}                            
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit  /* Comment out later?
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

@@ -1,0 +1,112 @@
+/* {{{ COMMENTS
+/* THISFILE.aml
+/* Hugo Ahlenius, UNEP/GRID-ARendal
+/* Last Modified: 2004-Jan-13 11:57 (HA)
+/*
+/* I do...
+/*
+/* HISTORY
+/* 2004-Jan-13 -- Created this skeleton(HA)
+/* }}} 
+
+&ARGS 
+&SETVAR thisFile = [BEFORE %AML$FILE% '.aml']
+&SETVAR Usage = USAGE OF THIS COMMAND
+&SETVAR useTempWS = .TRUE.
+
+/* {{{ DEBUG ARGS
+	&IF NOT [NULL %doDebug%] &THEN &ECHO &ON
+/* }}} 
+
+/* {{{ STANDARD BLOCK
+	&SEVERITY &ERROR &ROUTINE bailout
+	&SETVAR doCW = .TRUE.
+	&SETVAR hasWindows = .FALSE.
+	&IF "[BEFORE [SHOW &OS] ,]" eq "Windows_NT" &THEN &SETVAR hasWindows = .TRUE.
+	&IF %hasWindows% &THEN &DO
+		&WATCH %TEMP%\%thisFile%.log
+		&AMLPATH %home%/aml
+		&ATOOL %home%/aml
+		&SETVAR dirchar = \
+		&END 
+	&ELSE &DO
+		&WATCH %TEMP%/%thisFile%.log
+		&AMLPATH ~/aml
+		&ATOOL ~/aml
+		&SETVAR dirchar = /
+	&END
+	&PT &ON
+	&SYSTEM timer start
+	dataset disconnect connUtnes
+
+
+	/* {{{ CREATE WS
+	&IF %doCW% && %useTempWS% &THEN &DO /* If run with debug args
+		&if [EXISTS tempws_%thisFile% -workspace] &THEN rm -r -f tempws_%thisFile%
+		cw tempws_%thisFile%
+	&END
+	w tempws_%thisFile%
+	/* }}} 
+/* }}}
+
+/* {{{ SETUP WORK ENVIRONMENT
+/* }}} 
+
+/* ACTUAL CODE STARTS HERE ----------------------------
+
+
+/* ACTUAL CODE ENDS HERE ----------------------------
+
+/* {{{ SUB-ROUTINES
+/* }}} 
+
+/* {{{ STANDARD SUB ROUTINES
+
+	/* {{{ CLEANUP (PROPER EXIT)
+	&CALL niceclose
+	&RETURN
+	/* }}} 
+
+	/* {{{ USAGE
+	&LABEL USAGE
+		&CALL niceclose
+		&TYPE
+		&TYPE USAGE
+		&TYPE %Usage%
+	&RETURN
+	/* }}} 
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&WATCH &OFF
+	&MESSAGES &ON
+	&WATCH &OFF
+	&SYSTEM timer stop
+	&SEVERITY &ERROR &FAIL
+	&IF %:program% = PROJECT &THEN end
+	&IF %:program% <> ARC &THEN quit
+	&IF %:program% <> ARC &THEN quit
+	&IF %:program% <> ARC &THEN quit
+	layer remove inLayer
+	layer remove bound
+	dataset disconnect connUtnes
+	w ..
+	&ECHO &OFF
+	&MESSAGES &ON
+	&RETURN
+	/* Done!
+	/*}}}*/
+
+	/* {{{ BAILOUT / ERROR HANDLING
+	/* In case of error, make sure that the env. is reset
+	&ROUTINE bailout
+	&CALL niceclose
+	&TYPE
+	&TYPE
+	&TYPE
+	&RETURN &ERROR Bailing out of AML
+	/* end error handling
+	/* /* }}} 
+
+/*}}}*/
+

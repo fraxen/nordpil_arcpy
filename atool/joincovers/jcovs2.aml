@@ -1,0 +1,113 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS- Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: JCOVS2.AML
+/*   Purpose: Get the major processing choices from user.
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT   /*  {'position'} {'stripe'} {MODELESS | MODAL}
+/*-----------
+/* Initialize tool interface
+/*
+
+&set position = [extract 1 [unquote %arglist%]]
+&set stripe   = [extract 2 [unquote %arglist%]]
+&set modality = [extract 3 [unquote %arglist%]]
+&if [null %position%] or %position%_ = #_ &then 
+  &set position = &cc &screen &cc
+&if [null %stripe%] or %stripe%_ = #_ &then 
+  &set stripe = JoinCovers - Step 2 of 5 - Processing Options 
+&if [null %modality%] or %modality%_ = #_ &then
+  &set mode =
+&else
+  &if [translate %modality%] = MODAL &then
+    &set mode = &modal
+  &else
+    &set mode = 
+/*
+/* Issue thread delete self if thread depth = 2 and input is tty 
+&if [show &thread &depth] = 2 and [extract 1 [show &thread &stack]] = tty &then
+  &set launch = &thread &delete &self 
+&else 
+  &set launch
+/*
+&if [show &thread &exists tool$jcovs2] &then
+   &thread &delete tool$jcovs2
+&thread &create tool$jcovs2 %mode% ~
+  &menu jcovs2 ~
+  &position [unquote %position%] ~
+  &stripe [quote [unquote %stripe%]] ~
+  &pinaction '&run jcovs2 exit'
+%launch%
+&return
+
+/*-------------
+&routine UPDATE
+/*-------------
+/*  If user wants to search variable items, check features box.
+&if %.jcovs2$itemflag% &then
+  &s .jcovs2$featflag .true.
+&return
+
+/*-----------
+&routine BACK
+/*-----------
+/* Go back to previous dialog.
+&s .joincovers$nextaml jcovs1 init
+&call EXIT
+&return
+
+/*-----------
+&routine NEXT
+/*-----------
+&run joincovers STEP2
+&s .joincovers$nextaml jcovs3 init
+&call EXIT
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: JCOVS2 INIT {'''position'''} {'''stripe'''} {MODELESS | MODAL}
+&type Usage
+&return &inform 
+
+/*-------------
+&routine CANCEL
+/*-------------
+&run joincovers CANCEL
+&if %.joincovers$cancel% &then
+  &call EXIT
+&return
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+/*&dv .jcovs2$*
+&if [show &thread &exists tool$jcovs2] &then 
+  &thread &delete tool$jcovs2
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+/* &call exit
+&return &warning An error has occurred in routine: %routine% (JCOVS2.AML).
+

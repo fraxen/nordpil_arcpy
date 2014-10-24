@@ -1,0 +1,2874 @@
+/* Re-project to Goode's interrupted homolosine
+
+/* Hugo Ahlenius	
+/* Last Modified: 2003-Jul-02 15:23 (HA)
+
+/* $Header: /config/config/aml/arc/goode.aml,v 1.3 2003/07/30 08:47:07 hugo Exp $
+
+/* HISTORY
+/* 2003-Jul-02 -- Created history+header(HA)
+/* 2003-Jul-02 -- Added jointem for polys(HA)
+
+&ARGS strClass dataIn dataOut strType bolDebug
+&SETVAR thisFile = goode
+
+/* {{{ VALIDATE ARGS AND IF NOT OK, TYPE USAGE
+	&IF [NULL %dataIn%] | [NULL %dataOut%] &THEN &CALL usage
+
+	&IF [NULL %strClass%] &THEN &SETVAR strClass = COVER
+	&SETVAR bolOK = .FALSE.
+	&SETVAR strClass = [UPCASE %strClass%]
+	&DO strIndex &LIST COVER GRID
+		&IF "%strClass%" eq "%strIndex%" &THEN &SETVAR bolOK = .TRUE.
+	&END
+	&IF not %bolOK% &THEN &CALL usage
+
+	&IF [NULL %strType%] &THEN &SETVAR strType = POLY
+	&SETVAR bolOK = .FALSE.
+	&SETVAR strType = [UPCASE %strType%]
+	&DO strIndex &LIST POLY LINE POINT NET LINK RAW #
+		&IF "%strType%" eq "%strIndex%" &THEN &SETVAR bolOK = .TRUE.
+	&END
+	&IF not %bolOK% &THEN &CALL usage
+/* }}} 
+
+/* {{{ GLOBAL VARS
+/* }}} 
+
+/* {{{ DEBUG ARGS
+	&SETVAR doCW = .FALSE.
+	&IF [NULL %bolDebug%] &THEN &SETVAR doCW = .TRUE.
+/* }}} 
+
+/* {{{ Startup
+&ECHO &ON
+
+&PT &ON
+
+&SEVERITY &ERROR &ROUTINE bailout
+
+&SETVAR hasWindows = .FALSE.
+&IF "[BEFORE [SHOW &OS] ,]" eq "Windows_NT" &THEN &SETVAR hasWindows = .TRUE.
+
+&IF %hasWindows% &THEN &DO
+	/* Set it up like this if running on Windows
+	&SETVAR dirchar = \
+	&SETVAR dirTemp = 
+	&SETVAR strDatecmd = date /t
+	&WATCH %dirTemp%%thisFile%.log
+	&END
+&ELSE &DO
+	/* ...and like this if it is running on Solaris
+	&SETVAR dirTemp = ./
+	&SETVAR dirChar = /
+	&SETVAR strDatecmd = date
+	&WATCH ~/%thisFile%.log
+&END
+
+/* Just a date stamp for the log-file
+&SYSTEM %strDatecmd%
+
+&IF %doCW% &THEN &DO /* If run with debug args
+	&if [EXISTS tempws_goode -workspace] &THEN rm -r -f tempws_goode
+	cw tempws_goode
+	COPY %dataIn% tempws_goode%dirChar%data0
+&END
+w tempws_goode
+
+/* }}} 
+
+&IF [NULL %bolDebug%] &THEN &DO
+
+/* {{{ INITIALIZE, set defaults
+/* }}} 
+
+/* {{{ GENERATE REGION
+	/* {{{ GENERATE FILE
+		&SYSTEM echo 1, -170.0000000,  70.0000000 > region.generate
+		&SYSTEM echo -180.0000000,  50.0000000 >> region.generate
+		&SYSTEM echo -180.0000000,  90.0000000 >> region.generate
+		&SYSTEM echo -160.0000000,  90.0000000 >> region.generate
+		&SYSTEM echo -160.0000000,  50.0000000 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo 2, -100.0000000,  65.0000000 >> region.generate
+		&SYSTEM echo -180.0000000,  40.7366111 >> region.generate
+		&SYSTEM echo -180.0000000,  50.0000000 >> region.generate
+		&SYSTEM echo -160.0000000,  50.0000000 >> region.generate
+		&SYSTEM echo -160.0000000,  90.0000000 >> region.generate
+		&SYSTEM echo -180.0000000,  90.0000000 >> region.generate
+		&SYSTEM echo -50.0000000,  90.0000000 >> region.generate
+		&SYSTEM echo -50.0000000,  60.0000000 >> region.generate
+		&SYSTEM echo -40.0000000,  60.0000000 >> region.generate
+		&SYSTEM echo -40.0000000,  40.7366111 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo 3,  -30.0000000,  75.0000000 >> region.generate
+		&SYSTEM echo -40.0000000,  60.0000000 >> region.generate
+		&SYSTEM echo -50.0000000,  60.0000000 >> region.generate
+		&SYSTEM echo -50.0000000,  90.0000000 >> region.generate
+		&SYSTEM echo -10.0000000,  90.0000000 >> region.generate
+		&SYSTEM echo -10.0000000,  60.0000000 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo 4,   30.0000000,  65.0000000 >> region.generate
+		&SYSTEM echo -40.0000000,  40.7366111 >> region.generate
+		&SYSTEM echo -40.0000000,  60.0000000 >> region.generate
+		&SYSTEM echo -10.0000000,  60.0000000 >> region.generate
+		&SYSTEM echo -10.0000000,  90.0000000 >> region.generate
+		&SYSTEM echo 180.0000000,  90.0000000 >> region.generate
+		&SYSTEM echo 180.0000000,  40.7366111 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo 5, -100.0000000,  20.0000000 >> region.generate
+		&SYSTEM echo -180.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo -180.0000000,  40.7366111 >> region.generate
+		&SYSTEM echo -40.0000000,  40.7366111 >> region.generate
+		&SYSTEM echo -40.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo -100.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo 6,   30.0000000,  20.0000000 >> region.generate
+		&SYSTEM echo -40.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo -40.0000000,  40.7366111 >> region.generate
+		&SYSTEM echo 180.0000000,  40.7366111 >> region.generate
+		&SYSTEM echo 180.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo 80.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo -20.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo 7, -160.0000000, -20.0000000 >> region.generate
+		&SYSTEM echo -180.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo -180.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo -100.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo -100.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo 8,  -60.0000000, -20.0000000 >> region.generate
+		&SYSTEM echo -100.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo -100.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo -40.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo -20.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo -20.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo 9,   20.0000000, -20.0000000 >> region.generate
+		&SYSTEM echo -20.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo -20.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo 80.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo 80.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo 10,  140.0000000, -20.0000000 >> region.generate
+		&SYSTEM echo 80.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo 80.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo 180.0000000,   0.0000000 >> region.generate
+		&SYSTEM echo 180.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo 11, -160.0000000, -65.0000000 >> region.generate
+		&SYSTEM echo -180.0000000, -90.0000000 >> region.generate
+		&SYSTEM echo -180.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo -100.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo -100.0000000, -90.0000000 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo 12,  -60.0000000, -65.0000000 >> region.generate
+		&SYSTEM echo -100.0000000, -90.0000000 >> region.generate
+		&SYSTEM echo -100.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo -20.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo -20.0000000, -90.0000000 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo 13,   20.0000000, -65.0000000 >> region.generate
+		&SYSTEM echo -20.0000000, -90.0000000 >> region.generate
+		&SYSTEM echo -20.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo 80.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo 80.0000000, -90.0000000 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo 14,  140.0000000, -65.0000000 >> region.generate
+		&SYSTEM echo 80.0000000, -90.0000000 >> region.generate
+		&SYSTEM echo 80.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo 180.0000000, -40.7366111 >> region.generate
+		&SYSTEM echo 180.0000000, -90.0000000 >> region.generate
+		&SYSTEM echo end >> region.generate
+		&SYSTEM echo end >> region.generate
+	/* }}}
+	/* {{{ DO THE GENERATION
+		GENERATE region1
+			INPUT region.generate
+			POLYGONS
+		QUIT
+	/* }}} 
+
+	CLEAN region1
+/* }}} 
+
+/* {{{ GENERATE GOODE BOUNDARY
+	/* {{{ GENERATE FILE
+	&SYSTEM echo          0    -0.2231677E+06     0.9790480E+05 > goodebound.generate
+	&SYSTEM echo     -0.1273592E+08    -0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1275987E+08    -0.4585221E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1278413E+08    -0.4640582E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1280871E+08    -0.4695781E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1283361E+08    -0.4750818E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1285884E+08    -0.4805689E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1288439E+08    -0.4860393E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1291026E+08    -0.4914927E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1293646E+08    -0.4969288E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1296298E+08    -0.5023475E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1298984E+08    -0.5077485E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1301703E+08    -0.5131316E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1304455E+08    -0.5184964E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1307241E+08    -0.5238429E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1310060E+08    -0.5291706E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1312913E+08    -0.5344795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1315800E+08    -0.5397691E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1318722E+08    -0.5450394E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1321677E+08    -0.5502899E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1324668E+08    -0.5555205E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1327694E+08    -0.5607308E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1330754E+08    -0.5659207E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1333850E+08    -0.5710898E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1336982E+08    -0.5762379E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1340150E+08    -0.5813646E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1343353E+08    -0.5864697E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1346593E+08    -0.5915529E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1349873E+08    -0.5966175E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1353187E+08    -0.6016566E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1356539E+08    -0.6066730E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1359928E+08    -0.6116664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1363356E+08    -0.6166365E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1366822E+08    -0.6215830E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1370327E+08    -0.6265056E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1373871E+08    -0.6314039E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1377454E+08    -0.6362776E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1381078E+08    -0.6411264E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1384742E+08    -0.6459500E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1388447E+08    -0.6507479E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1392193E+08    -0.6555200E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1395982E+08    -0.6602658E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1399812E+08    -0.6649849E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1403686E+08    -0.6696770E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1407603E+08    -0.6743417E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1411564E+08    -0.6789786E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1415570E+08    -0.6835873E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1419622E+08    -0.6881674E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1423719E+08    -0.6927186E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1427863E+08    -0.6972403E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1432055E+08    -0.7017321E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1436295E+08    -0.7061936E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1440585E+08    -0.7106244E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1444924E+08    -0.7150239E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1449314E+08    -0.7193916E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1453756E+08    -0.7237271E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1458252E+08    -0.7280299E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1462801E+08    -0.7322993E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1467405E+08    -0.7365349E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1472066E+08    -0.7407361E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1476785E+08    -0.7449022E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1481562E+08    -0.7490327E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1486400E+08    -0.7531268E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1491300E+08    -0.7571840E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1496264E+08    -0.7612034E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1501296E+08    -0.7651868E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1506394E+08    -0.7691294E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1511561E+08    -0.7730321E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1516800E+08    -0.7768942E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1522112E+08    -0.7807147E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1527502E+08    -0.7844929E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1532971E+08    -0.7882277E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1538522E+08    -0.7919181E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1544160E+08    -0.7955632E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1549886E+08    -0.7991617E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1555705E+08    -0.8027125E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1561622E+08    -0.8062143E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1567641E+08    -0.8096658E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1573767E+08    -0.8130656E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1580007E+08    -0.8164119E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1586365E+08    -0.8197032E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1592851E+08    -0.8229376E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1599470E+08    -0.8261130E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1606238E+08    -0.8292290E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1613157E+08    -0.8322807E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1620244E+08    -0.8352664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1627513E+08    -0.8381833E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1634979E+08    -0.8410281E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1642664E+08    -0.8437971E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1650591E+08    -0.8464861E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1658789E+08    -0.8490900E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1667298E+08    -0.8516038E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1676162E+08    -0.8540199E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1685444E+08    -0.8563302E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1695232E+08    -0.8585243E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1705646E+08    -0.8605883E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1716884E+08    -0.8625049E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1729267E+08    -0.8642457E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1743477E+08    -0.8657664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1761580E+08    -0.8669698E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1779101E+08    -0.8673540E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1788079E+08    -0.8664510E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1793339E+08    -0.8650784E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1797746E+08    -0.8634460E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1801675E+08    -0.8616180E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1805281E+08    -0.8596289E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1808647E+08    -0.8575013E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1811826E+08    -0.8552507E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1814851E+08    -0.8528892E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1817748E+08    -0.8504256E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1820533E+08    -0.8478687E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1823221E+08    -0.8452239E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1825824E+08    -0.8424965E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1828351E+08    -0.8396911E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1830807E+08    -0.8368118E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1833201E+08    -0.8338619E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1835536E+08    -0.8308446E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1837818E+08    -0.8277627E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1840051E+08    -0.8246179E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1842236E+08    -0.8214143E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1844377E+08    -0.8181527E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1846477E+08    -0.8148351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1848539E+08    -0.8114633E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1850564E+08    -0.8080389E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1852554E+08    -0.8045634E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1854511E+08    -0.8010382E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1856436E+08    -0.7974647E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1858330E+08    -0.7938440E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1860196E+08    -0.7901773E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1862033E+08    -0.7864658E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1863843E+08    -0.7827103E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1865628E+08    -0.7789120E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1867387E+08    -0.7750717E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1869122E+08    -0.7711903E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1870833E+08    -0.7672686E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1872521E+08    -0.7633075E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1874188E+08    -0.7593061E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1875833E+08    -0.7552687E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1877456E+08    -0.7511939E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1879059E+08    -0.7470825E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1880643E+08    -0.7429351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1882206E+08    -0.7387523E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1883751E+08    -0.7345348E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1885277E+08    -0.7302831E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1886785E+08    -0.7259979E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1888275E+08    -0.7216795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1889747E+08    -0.7173287E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1891203E+08    -0.7129459E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1892641E+08    -0.7085315E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1894063E+08    -0.7040862E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1895469E+08    -0.6996102E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1896859E+08    -0.6951042E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1898233E+08    -0.6905685E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1899591E+08    -0.6860036E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1900934E+08    -0.6814099E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1902263E+08    -0.6767878E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1903576E+08    -0.6721377E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1904875E+08    -0.6674600E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1906159E+08    -0.6627550E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1907429E+08    -0.6580233E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1908686E+08    -0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1909928E+08    -0.6484807E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1911156E+08    -0.6436705E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1912371E+08    -0.6388350E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1913573E+08    -0.6339743E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1914761E+08    -0.6290889E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1915936E+08    -0.6241791E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1917098E+08    -0.6192452E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1918248E+08    -0.6142875E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1919384E+08    -0.6093063E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1920508E+08    -0.6043020E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1921619E+08    -0.5992748E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1922718E+08    -0.5942250E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1923805E+08    -0.5891502E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1924880E+08    -0.5840566E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1925942E+08    -0.5789412E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1926992E+08    -0.5738043E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1928030E+08    -0.5686463E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1929057E+08    -0.5634673E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1930072E+08    -0.5582677E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1931074E+08    -0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1932066E+08    -0.5478077E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1933046E+08    -0.5425478E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1934014E+08    -0.5372684E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1934971E+08    -0.5319696E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1935917E+08    -0.5266518E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1936851E+08    -0.5213151E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1937775E+08    -0.5159599E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1938687E+08    -0.5105864E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1939588E+08    -0.5051949E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1940478E+08    -0.4997855E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1941357E+08    -0.4943585E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1942225E+08    -0.4889142E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1943082E+08    -0.4834527E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1943929E+08    -0.4779744E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1944764E+08    -0.4724794E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1945589E+08    -0.4669680E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1946404E+08    -0.4614404E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1947207E+08    -0.4558968E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1947627E+08    -0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1948887E+08    -0.4474105E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1950134E+08    -0.4418508E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1951368E+08    -0.4362910E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1952589E+08    -0.4307313E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1953797E+08    -0.4251715E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1954991E+08    -0.4196118E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1956172E+08    -0.4140520E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1957340E+08    -0.4084923E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1958494E+08    -0.4029325E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1959634E+08    -0.3973728E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1960761E+08    -0.3918131E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1961873E+08    -0.3862533E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1962972E+08    -0.3806936E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1964057E+08    -0.3751338E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1965128E+08    -0.3695741E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1966185E+08    -0.3640143E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1967227E+08    -0.3584546E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1968255E+08    -0.3528949E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1969269E+08    -0.3473351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1970268E+08    -0.3417754E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1971252E+08    -0.3362156E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1972222E+08    -0.3306559E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1973178E+08    -0.3250961E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1974118E+08    -0.3195364E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1975044E+08    -0.3139766E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1975954E+08    -0.3084169E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1976850E+08    -0.3028572E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1977731E+08    -0.2972974E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1978596E+08    -0.2917377E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1979447E+08    -0.2861779E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1980282E+08    -0.2806182E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1981101E+08    -0.2750584E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1981906E+08    -0.2694987E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1982695E+08    -0.2639390E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1983468E+08    -0.2583792E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1984226E+08    -0.2528195E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1984968E+08    -0.2472597E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1985695E+08    -0.2417000E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1986406E+08    -0.2361402E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1987101E+08    -0.2305805E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1987780E+08    -0.2250207E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1988443E+08    -0.2194610E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1989091E+08    -0.2139013E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1989722E+08    -0.2083415E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1990338E+08    -0.2027818E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1990937E+08    -0.1972220E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1991520E+08    -0.1916623E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1992087E+08    -0.1861025E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1992638E+08    -0.1805428E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1993172E+08    -0.1749830E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1993690E+08    -0.1694233E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1994192E+08    -0.1638636E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1994678E+08    -0.1583038E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1995147E+08    -0.1527441E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1995599E+08    -0.1471843E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1996036E+08    -0.1416246E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1996455E+08    -0.1360648E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1996858E+08    -0.1305051E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1997245E+08    -0.1249454E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1997615E+08    -0.1193856E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1997968E+08    -0.1138259E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1998304E+08    -0.1082661E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1998624E+08    -0.1027064E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1998927E+08    -0.9714663E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1999214E+08    -0.9158689E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1999483E+08    -0.8602714E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1999736E+08    -0.8046740E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1999972E+08    -0.7490766E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2000192E+08    -0.6934791E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2000394E+08    -0.6378817E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2000580E+08    -0.5822843E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2000748E+08    -0.5266868E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2000900E+08    -0.4710894E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2001035E+08    -0.4154919E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2001153E+08    -0.3598945E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2001254E+08    -0.3042971E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2001338E+08    -0.2486996E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2001406E+08    -0.1931022E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2001456E+08    -0.1375047E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2001489E+08    -0.8190730E+05 >> goodebound.generate
+	&SYSTEM echo     -0.2001506E+08    -0.2630987E+05 >> goodebound.generate
+	&SYSTEM echo     -0.2001508E+08     0.0000000E+00 >> goodebound.generate
+	&SYSTEM echo     -0.2001474E+08     0.5559744E+05 >> goodebound.generate
+	&SYSTEM echo     -0.2001372E+08     0.1111949E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2001203E+08     0.1667923E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2000966E+08     0.2223898E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2000661E+08     0.2779872E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2000289E+08     0.3335846E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1999849E+08     0.3891821E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1999341E+08     0.4447795E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1998766E+08     0.5003769E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1998123E+08     0.5559744E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1997412E+08     0.6115718E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1996635E+08     0.6671693E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1995790E+08     0.7227667E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1994877E+08     0.7783641E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1993897E+08     0.8339616E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1992851E+08     0.8895590E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1991737E+08     0.9451564E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1990556E+08     0.1000754E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1989308E+08     0.1056351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1987993E+08     0.1111949E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1986612E+08     0.1167546E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1985164E+08     0.1223144E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1983650E+08     0.1278741E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1982069E+08     0.1334339E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1980422E+08     0.1389936E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1978708E+08     0.1445533E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1976929E+08     0.1501131E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1975084E+08     0.1556728E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1973173E+08     0.1612326E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1971197E+08     0.1667923E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1969155E+08     0.1723521E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1967048E+08     0.1779118E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1964875E+08     0.1834715E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1962638E+08     0.1890313E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1960336E+08     0.1945910E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1957970E+08     0.2001508E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1955539E+08     0.2057105E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1953043E+08     0.2112703E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1950484E+08     0.2168300E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1947861E+08     0.2223898E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1945174E+08     0.2279495E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1942424E+08     0.2335092E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1939610E+08     0.2390690E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1936733E+08     0.2446287E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1933794E+08     0.2501885E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1930792E+08     0.2557482E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1927728E+08     0.2613080E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1924601E+08     0.2668677E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1921413E+08     0.2724275E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1918163E+08     0.2779872E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1914852E+08     0.2835469E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1911479E+08     0.2891067E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1908046E+08     0.2946664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1904552E+08     0.3002262E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1900997E+08     0.3057859E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1897383E+08     0.3113457E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1893708E+08     0.3169054E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1889975E+08     0.3224651E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1886181E+08     0.3280249E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1882329E+08     0.3335846E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1878419E+08     0.3391444E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1874450E+08     0.3447041E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1870422E+08     0.3502639E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1866338E+08     0.3558236E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1862195E+08     0.3613834E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1857996E+08     0.3669431E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1853739E+08     0.3725028E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1849427E+08     0.3780626E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1845058E+08     0.3836223E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1840633E+08     0.3891821E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1836153E+08     0.3947418E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1831617E+08     0.4003016E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1827027E+08     0.4058613E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1822382E+08     0.4114210E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1817683E+08     0.4169808E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1812931E+08     0.4225405E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1808125E+08     0.4281003E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1803266E+08     0.4336600E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1798354E+08     0.4392198E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1793390E+08     0.4447795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1788375E+08     0.4503393E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1785983E+08     0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1782790E+08     0.4585221E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1779555E+08     0.4640582E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1776278E+08     0.4695781E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1772958E+08     0.4750818E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1769594E+08     0.4805689E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1766188E+08     0.4860393E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1762738E+08     0.4914927E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1759245E+08     0.4969288E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1755708E+08     0.5023475E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1752127E+08     0.5077485E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1748502E+08     0.5131316E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1744833E+08     0.5184964E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1741119E+08     0.5238429E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1737360E+08     0.5291706E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1733555E+08     0.5344795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1729706E+08     0.5397691E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1725811E+08     0.5450394E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1721869E+08     0.5502899E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1719775E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1715763E+08     0.5582677E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1711704E+08     0.5634673E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1707598E+08     0.5686463E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1703445E+08     0.5738043E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1699245E+08     0.5789412E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1694996E+08     0.5840566E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1690699E+08     0.5891502E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1686350E+08     0.5942250E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1681954E+08     0.5992748E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1677509E+08     0.6043020E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1673014E+08     0.6093063E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1668468E+08     0.6142875E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1663870E+08     0.6192452E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1659222E+08     0.6241791E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1654521E+08     0.6290889E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1649768E+08     0.6339743E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1644962E+08     0.6388350E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1640102E+08     0.6436705E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1635188E+08     0.6484807E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1630219E+08     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1625195E+08     0.6580233E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1620114E+08     0.6627550E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1614976E+08     0.6674600E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1609781E+08     0.6721377E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1604527E+08     0.6767878E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1599214E+08     0.6814099E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1593841E+08     0.6860036E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1588407E+08     0.6905685E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1582911E+08     0.6951042E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1577352E+08     0.6996102E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1571729E+08     0.7040862E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1566041E+08     0.7085315E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1560287E+08     0.7129459E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1554466E+08     0.7173287E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1548576E+08     0.7216795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1542616E+08     0.7259979E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1536585E+08     0.7302831E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1530480E+08     0.7345348E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1524302E+08     0.7387523E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1518047E+08     0.7429351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1511714E+08     0.7470825E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1505302E+08     0.7511939E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1498808E+08     0.7552687E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1492230E+08     0.7593061E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1485563E+08     0.7633075E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1478809E+08     0.7672686E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1471964E+08     0.7711903E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1465024E+08     0.7750717E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1457988E+08     0.7789120E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1450850E+08     0.7827103E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1443609E+08     0.7864658E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1436260E+08     0.7901773E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1428798E+08     0.7938440E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1421220E+08     0.7974647E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1413520E+08     0.8010382E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1405693E+08     0.8045634E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1397733E+08     0.8080389E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1389633E+08     0.8114633E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1381387E+08     0.8148351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1372985E+08     0.8181527E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1364419E+08     0.8214143E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1355679E+08     0.8246179E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1346749E+08     0.8277627E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1337623E+08     0.8308446E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1328281E+08     0.8338619E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1318707E+08     0.8368118E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1308879E+08     0.8396911E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1298774E+08     0.8424965E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1288362E+08     0.8452239E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1277608E+08     0.8478687E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1266468E+08     0.8504256E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1254881E+08     0.8528892E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1242780E+08     0.8552507E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1230065E+08     0.8575013E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1216600E+08     0.8596289E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1202175E+08     0.8616180E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1186461E+08     0.8634460E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1168833E+08     0.8650784E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1147795E+08     0.8664510E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1138839E+08     0.8666767E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1111965E+08     0.8673540E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1111965E+08     0.8673540E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1071622E+08     0.8664510E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1047954E+08     0.8650784E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1028123E+08     0.8634460E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1010444E+08     0.8616180E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9942165E+07     0.8596289E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9790677E+07     0.8575013E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9647637E+07     0.8552507E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9511504E+07     0.8528892E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9381148E+07     0.8504256E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9255822E+07     0.8478687E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9134836E+07     0.8452239E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9017701E+07     0.8424965E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8904020E+07     0.8396911E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8793462E+07     0.8368118E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8685752E+07     0.8338619E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8580658E+07     0.8308446E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8477980E+07     0.8277627E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8377523E+07     0.8246179E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8279198E+07     0.8214143E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8182832E+07     0.8181527E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8088312E+07     0.8148351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7995537E+07     0.8114633E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7904415E+07     0.8080389E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7814864E+07     0.8045634E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7726811E+07     0.8010382E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7640187E+07     0.7974647E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7554932E+07     0.7938440E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7470990E+07     0.7901773E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7388310E+07     0.7864658E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7306845E+07     0.7827103E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7226551E+07     0.7789120E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7147388E+07     0.7750717E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7069320E+07     0.7711903E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6992312E+07     0.7672686E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6916333E+07     0.7633075E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6841323E+07     0.7593061E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6767322E+07     0.7552687E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6694264E+07     0.7511939E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6622125E+07     0.7470825E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6550883E+07     0.7429351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6480517E+07     0.7387523E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6411007E+07     0.7345348E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6342335E+07     0.7302831E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6274482E+07     0.7259979E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6207433E+07     0.7216795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6141170E+07     0.7173287E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6075679E+07     0.7129459E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6010947E+07     0.7085315E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5946958E+07     0.7040862E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5883701E+07     0.6996102E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5821164E+07     0.6951042E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5759333E+07     0.6905685E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5698200E+07     0.6860036E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5637753E+07     0.6814099E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5577982E+07     0.6767878E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5518877E+07     0.6721377E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5460430E+07     0.6674600E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5402631E+07     0.6627550E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5345473E+07     0.6580233E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5288947E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5321339E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5353730E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5386122E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5418514E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5450906E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5483298E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5515690E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5548082E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5580474E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5612866E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5645258E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5677649E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5710041E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5742433E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5774825E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5807217E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5839609E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5872001E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5904393E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5936785E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5969176E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6001568E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6033960E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6066352E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6098744E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6131136E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6163528E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6195920E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6228312E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6260704E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6293095E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6325487E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6357879E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6390271E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6422663E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6455055E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6487447E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6519839E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6552231E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6584622E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6617014E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6649406E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6681798E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6714190E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6746582E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6778974E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6811366E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6843758E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6876150E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6908541E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6940933E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6973325E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7005717E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7038109E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7070501E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7102893E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7135285E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7167677E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7200068E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7232460E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7195193E+07     0.6484807E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7158337E+07     0.6436705E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7121888E+07     0.6388350E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7085842E+07     0.6339743E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7050193E+07     0.6290889E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7014939E+07     0.6241791E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6980075E+07     0.6192452E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6945597E+07     0.6142875E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6911502E+07     0.6093063E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6877786E+07     0.6043020E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6844446E+07     0.5992748E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6811478E+07     0.5942250E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6778863E+07     0.5891502E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6746634E+07     0.5840566E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6714768E+07     0.5789412E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6683262E+07     0.5738043E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6652115E+07     0.5686463E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6621322E+07     0.5634673E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6590882E+07     0.5582677E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6560793E+07     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6531051E+07     0.5478077E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6501656E+07     0.5425478E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6472604E+07     0.5372684E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6443893E+07     0.5319696E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6415523E+07     0.5266518E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6387489E+07     0.5213151E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6359792E+07     0.5159599E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6332429E+07     0.5105864E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6305398E+07     0.5051949E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6278697E+07     0.4997855E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6252326E+07     0.4943585E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6226281E+07     0.4889142E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6200562E+07     0.4834527E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6175168E+07     0.4779744E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6150096E+07     0.4724794E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6125346E+07     0.4669680E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6100916E+07     0.4614404E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6076805E+07     0.4558968E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6064231E+07     0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6026428E+07     0.4474105E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5989015E+07     0.4418508E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5951992E+07     0.4362910E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5915363E+07     0.4307313E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5879130E+07     0.4251715E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5843296E+07     0.4196118E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5807864E+07     0.4140520E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5772836E+07     0.4084923E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5738216E+07     0.4029325E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5704005E+07     0.3973728E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5670207E+07     0.3918131E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5636823E+07     0.3862533E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5603858E+07     0.3806936E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5571312E+07     0.3751338E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5539189E+07     0.3695741E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5507491E+07     0.3640143E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5476220E+07     0.3584546E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5445379E+07     0.3528949E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5414970E+07     0.3473351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5384995E+07     0.3417754E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5355458E+07     0.3362156E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5326359E+07     0.3306559E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5297701E+07     0.3250961E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5269487E+07     0.3195364E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5241718E+07     0.3139766E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5214397E+07     0.3084169E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5187525E+07     0.3028572E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5161105E+07     0.2972974E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5135139E+07     0.2917377E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5109629E+07     0.2861779E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5084576E+07     0.2806182E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5059983E+07     0.2750584E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5035852E+07     0.2694987E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5012183E+07     0.2639390E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4988980E+07     0.2583792E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4966244E+07     0.2528195E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4943976E+07     0.2472597E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4922178E+07     0.2417000E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4900853E+07     0.2361402E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4880001E+07     0.2305805E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4859624E+07     0.2250207E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4839724E+07     0.2194610E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4820302E+07     0.2139013E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4801360E+07     0.2083415E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4782899E+07     0.2027818E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4764921E+07     0.1972220E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4747426E+07     0.1916623E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4730417E+07     0.1861025E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4713894E+07     0.1805428E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4697859E+07     0.1749830E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4682313E+07     0.1694233E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4667258E+07     0.1638636E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4652694E+07     0.1583038E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4638622E+07     0.1527441E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4625043E+07     0.1471843E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4611960E+07     0.1416246E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4599372E+07     0.1360648E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4587280E+07     0.1305051E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4575686E+07     0.1249454E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4564590E+07     0.1193856E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4553994E+07     0.1138259E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4543897E+07     0.1082661E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4534301E+07     0.1027064E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4525207E+07     0.9714663E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4516614E+07     0.9158689E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4508525E+07     0.8602714E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4500939E+07     0.8046740E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4493857E+07     0.7490766E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4487280E+07     0.6934791E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4481208E+07     0.6378817E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4475641E+07     0.5822843E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4470580E+07     0.5266868E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4466026E+07     0.4710894E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4461978E+07     0.4154919E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4458437E+07     0.3598945E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4455404E+07     0.3042971E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4452878E+07     0.2486996E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4450860E+07     0.1931022E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4449349E+07     0.1375047E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4444220E+07     0.1931022E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4441866E+07     0.2486996E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4438919E+07     0.3042971E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4435379E+07     0.3598945E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4431249E+07     0.4154919E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4426526E+07     0.4710894E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4421213E+07     0.5266868E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4415309E+07     0.5822843E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4408814E+07     0.6378817E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4401730E+07     0.6934791E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4394056E+07     0.7490766E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4385794E+07     0.8046740E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4376944E+07     0.8602714E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4367506E+07     0.9158689E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4357482E+07     0.9714663E+06 >> goodebound.generate
+	&SYSTEM echo     -0.4346872E+07     0.1027064E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4335677E+07     0.1082661E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4323897E+07     0.1138259E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4311534E+07     0.1193856E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4298589E+07     0.1249454E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4285063E+07     0.1305051E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4270956E+07     0.1360648E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4256270E+07     0.1416246E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4241006E+07     0.1471843E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4225164E+07     0.1527441E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4208747E+07     0.1583038E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4191755E+07     0.1638636E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4174191E+07     0.1694233E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4156054E+07     0.1749830E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4137346E+07     0.1805428E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4118070E+07     0.1861025E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4098226E+07     0.1916623E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4077815E+07     0.1972220E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4056841E+07     0.2027818E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4035303E+07     0.2083415E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4013204E+07     0.2139013E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3990545E+07     0.2194610E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3967328E+07     0.2250207E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3943555E+07     0.2305805E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3919228E+07     0.2361402E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3894348E+07     0.2417000E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3868918E+07     0.2472597E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3842939E+07     0.2528195E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3816413E+07     0.2583792E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3789342E+07     0.2639390E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3761729E+07     0.2694987E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3733576E+07     0.2750584E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3704884E+07     0.2806182E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3675656E+07     0.2861779E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3645894E+07     0.2917377E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3615600E+07     0.2972974E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3584777E+07     0.3028572E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3553427E+07     0.3084169E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3521552E+07     0.3139766E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3489155E+07     0.3195364E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3456238E+07     0.3250961E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3422804E+07     0.3306559E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3388856E+07     0.3362156E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3354395E+07     0.3417754E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3319425E+07     0.3473351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3283948E+07     0.3528949E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3247966E+07     0.3584546E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3211484E+07     0.3640143E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3174502E+07     0.3695741E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3137025E+07     0.3751338E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3099055E+07     0.3806936E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3060595E+07     0.3862533E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3021648E+07     0.3918131E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2982217E+07     0.3973728E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2942305E+07     0.4029325E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2901914E+07     0.4084923E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2861049E+07     0.4140520E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2819711E+07     0.4196118E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2777905E+07     0.4251715E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2735633E+07     0.4307313E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2692899E+07     0.4362910E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2649706E+07     0.4418508E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2606057E+07     0.4474105E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2561953E+07     0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2547284E+07     0.4558968E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2519154E+07     0.4614404E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2490652E+07     0.4669680E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2461777E+07     0.4724794E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2432527E+07     0.4779744E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2402900E+07     0.4834527E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2372895E+07     0.4889142E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2342510E+07     0.4943585E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2311743E+07     0.4997855E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2280592E+07     0.5051949E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2249056E+07     0.5105864E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2217132E+07     0.5159599E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2184818E+07     0.5213151E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2152113E+07     0.5266518E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2119014E+07     0.5319696E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2085519E+07     0.5372684E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2051625E+07     0.5425478E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2017330E+07     0.5478077E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1982631E+07     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1947527E+07     0.5582677E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1912014E+07     0.5634673E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1876089E+07     0.5686463E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1839750E+07     0.5738043E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1802994E+07     0.5789412E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1765817E+07     0.5840566E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1728217E+07     0.5891502E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1690165E+07     0.5942250E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1651702E+07     0.5992748E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1612806E+07     0.6043020E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1573470E+07     0.6093063E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1533693E+07     0.6142875E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1493469E+07     0.6192452E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1452794E+07     0.6241791E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1411664E+07     0.6290889E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1370074E+07     0.6339743E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1328020E+07     0.6388350E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1285496E+07     0.6436705E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1242498E+07     0.6484807E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1199019E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1199019E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1231411E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1263803E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1296195E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1328587E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1360979E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1393370E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1425762E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1458154E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1490546E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1522938E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1555330E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1587722E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1620114E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1652506E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1684897E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1717289E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1749681E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1782073E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1814465E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1846857E+07     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1796612E+07     0.6580233E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1745804E+07     0.6627550E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1694428E+07     0.6674600E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1642475E+07     0.6721377E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1589937E+07     0.6767878E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1536807E+07     0.6814099E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1483076E+07     0.6860036E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1428735E+07     0.6905685E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1373775E+07     0.6951042E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1318186E+07     0.6996102E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1261958E+07     0.7040862E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1205079E+07     0.7085315E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1147539E+07     0.7129459E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1089325E+07     0.7173287E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1030425E+07     0.7216795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9708253E+06     0.7259979E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9105118E+06     0.7302831E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8494697E+06     0.7345348E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7876833E+06     0.7387523E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7251358E+06     0.7429351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6618097E+06     0.7470825E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5976861E+06     0.7511939E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5327454E+06     0.7552687E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4669665E+06     0.7593061E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4002911E+06     0.7633075E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3327540E+06     0.7672686E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2643028E+06     0.7711903E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1949090E+06     0.7750717E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1245423E+06     0.7789120E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5316980E+05     0.7827103E+07 >> goodebound.generate
+	&SYSTEM echo      0.1924403E+05     0.7864658E+07 >> goodebound.generate
+	&SYSTEM echo      0.9273763E+05     0.7901773E+07 >> goodebound.generate
+	&SYSTEM echo      0.1673527E+06     0.7938440E+07 >> goodebound.generate
+	&SYSTEM echo      0.2431348E+06     0.7974647E+07 >> goodebound.generate
+	&SYSTEM echo      0.3201335E+06     0.8010382E+07 >> goodebound.generate
+	&SYSTEM echo      0.3984033E+06     0.8045634E+07 >> goodebound.generate
+	&SYSTEM echo      0.4780038E+06     0.8080389E+07 >> goodebound.generate
+	&SYSTEM echo      0.5590011E+06     0.8114633E+07 >> goodebound.generate
+	&SYSTEM echo      0.6414682E+06     0.8148351E+07 >> goodebound.generate
+	&SYSTEM echo      0.7254860E+06     0.8181527E+07 >> goodebound.generate
+	&SYSTEM echo      0.8111446E+06     0.8214143E+07 >> goodebound.generate
+	&SYSTEM echo      0.8985447E+06     0.8246179E+07 >> goodebound.generate
+	&SYSTEM echo      0.9878399E+06     0.8277627E+07 >> goodebound.generate
+	&SYSTEM echo      0.1079109E+07     0.8308446E+07 >> goodebound.generate
+	&SYSTEM echo      0.1172526E+07     0.8338619E+07 >> goodebound.generate
+	&SYSTEM echo      0.1268268E+07     0.8368118E+07 >> goodebound.generate
+	&SYSTEM echo      0.1366542E+07     0.8396911E+07 >> goodebound.generate
+	&SYSTEM echo      0.1467592E+07     0.8424965E+07 >> goodebound.generate
+	&SYSTEM echo      0.1571711E+07     0.8452239E+07 >> goodebound.generate
+	&SYSTEM echo      0.1679255E+07     0.8478687E+07 >> goodebound.generate
+	&SYSTEM echo      0.1790656E+07     0.8504256E+07 >> goodebound.generate
+	&SYSTEM echo      0.1906527E+07     0.8528892E+07 >> goodebound.generate
+	&SYSTEM echo      0.2027535E+07     0.8552507E+07 >> goodebound.generate
+	&SYSTEM echo      0.2154681E+07     0.8575013E+07 >> goodebound.generate
+	&SYSTEM echo      0.2289338E+07     0.8596289E+07 >> goodebound.generate
+	&SYSTEM echo      0.2433583E+07     0.8616180E+07 >> goodebound.generate
+	&SYSTEM echo      0.2590729E+07     0.8634460E+07 >> goodebound.generate
+	&SYSTEM echo      0.2767004E+07     0.8650784E+07 >> goodebound.generate
+	&SYSTEM echo      0.2977386E+07     0.8664510E+07 >> goodebound.generate
+	&SYSTEM echo      0.3335625E+07     0.8673540E+07 >> goodebound.generate
+	&SYSTEM echo      0.4007971E+07     0.8665572E+07 >> goodebound.generate
+	&SYSTEM echo      0.4097488E+07     0.8662216E+07 >> goodebound.generate
+	&SYSTEM echo      0.4402519E+07     0.8654417E+07 >> goodebound.generate
+	&SYSTEM echo      0.4544637E+07     0.8650784E+07 >> goodebound.generate
+	&SYSTEM echo      0.4919221E+07     0.8634460E+07 >> goodebound.generate
+	&SYSTEM echo      0.5253156E+07     0.8616180E+07 >> goodebound.generate
+	&SYSTEM echo      0.5559677E+07     0.8596289E+07 >> goodebound.generate
+	&SYSTEM echo      0.5845822E+07     0.8575013E+07 >> goodebound.generate
+	&SYSTEM echo      0.6116008E+07     0.8552507E+07 >> goodebound.generate
+	&SYSTEM echo      0.6373149E+07     0.8528892E+07 >> goodebound.generate
+	&SYSTEM echo      0.6619377E+07     0.8504256E+07 >> goodebound.generate
+	&SYSTEM echo      0.6856104E+07     0.8478687E+07 >> goodebound.generate
+	&SYSTEM echo      0.7084633E+07     0.8452239E+07 >> goodebound.generate
+	&SYSTEM echo      0.7305887E+07     0.8424965E+07 >> goodebound.generate
+	&SYSTEM echo      0.7520619E+07     0.8396911E+07 >> goodebound.generate
+	&SYSTEM echo      0.7729451E+07     0.8368118E+07 >> goodebound.generate
+	&SYSTEM echo      0.7932902E+07     0.8338619E+07 >> goodebound.generate
+	&SYSTEM echo      0.8131414E+07     0.8308446E+07 >> goodebound.generate
+	&SYSTEM echo      0.8325360E+07     0.8277627E+07 >> goodebound.generate
+	&SYSTEM echo      0.8515112E+07     0.8246179E+07 >> goodebound.generate
+	&SYSTEM echo      0.8700837E+07     0.8214143E+07 >> goodebound.generate
+	&SYSTEM echo      0.8882862E+07     0.8181527E+07 >> goodebound.generate
+	&SYSTEM echo      0.9061400E+07     0.8148351E+07 >> goodebound.generate
+	&SYSTEM echo      0.9236642E+07     0.8114633E+07 >> goodebound.generate
+	&SYSTEM echo      0.9408761E+07     0.8080389E+07 >> goodebound.generate
+	&SYSTEM echo      0.9577913E+07     0.8045634E+07 >> goodebound.generate
+	&SYSTEM echo      0.9744236E+07     0.8010382E+07 >> goodebound.generate
+	&SYSTEM echo      0.9907858E+07     0.7974647E+07 >> goodebound.generate
+	&SYSTEM echo      0.1006890E+08     0.7938440E+07 >> goodebound.generate
+	&SYSTEM echo      0.1022745E+08     0.7901773E+07 >> goodebound.generate
+	&SYSTEM echo      0.1038363E+08     0.7864658E+07 >> goodebound.generate
+	&SYSTEM echo      0.1053751E+08     0.7827103E+07 >> goodebound.generate
+	&SYSTEM echo      0.1068917E+08     0.7789120E+07 >> goodebound.generate
+	&SYSTEM echo      0.1083870E+08     0.7750717E+07 >> goodebound.generate
+	&SYSTEM echo      0.1098616E+08     0.7711903E+07 >> goodebound.generate
+	&SYSTEM echo      0.1113162E+08     0.7672686E+07 >> goodebound.generate
+	&SYSTEM echo      0.1127514E+08     0.7633075E+07 >> goodebound.generate
+	&SYSTEM echo      0.1141682E+08     0.7593061E+07 >> goodebound.generate
+	&SYSTEM echo      0.1155660E+08     0.7552687E+07 >> goodebound.generate
+	&SYSTEM echo      0.1169460E+08     0.7511939E+07 >> goodebound.generate
+	&SYSTEM echo      0.1183087E+08     0.7470825E+07 >> goodebound.generate
+	&SYSTEM echo      0.1196543E+08     0.7429351E+07 >> goodebound.generate
+	&SYSTEM echo      0.1209835E+08     0.7387523E+07 >> goodebound.generate
+	&SYSTEM echo      0.1222964E+08     0.7345348E+07 >> goodebound.generate
+	&SYSTEM echo      0.1235936E+08     0.7302831E+07 >> goodebound.generate
+	&SYSTEM echo      0.1248752E+08     0.7259979E+07 >> goodebound.generate
+	&SYSTEM echo      0.1261417E+08     0.7216795E+07 >> goodebound.generate
+	&SYSTEM echo      0.1273934E+08     0.7173287E+07 >> goodebound.generate
+	&SYSTEM echo      0.1286304E+08     0.7129459E+07 >> goodebound.generate
+	&SYSTEM echo      0.1298531E+08     0.7085315E+07 >> goodebound.generate
+	&SYSTEM echo      0.1310618E+08     0.7040862E+07 >> goodebound.generate
+	&SYSTEM echo      0.1322567E+08     0.6996102E+07 >> goodebound.generate
+	&SYSTEM echo      0.1334379E+08     0.6951042E+07 >> goodebound.generate
+	&SYSTEM echo      0.1346058E+08     0.6905685E+07 >> goodebound.generate
+	&SYSTEM echo      0.1357606E+08     0.6860036E+07 >> goodebound.generate
+	&SYSTEM echo      0.1369023E+08     0.6814099E+07 >> goodebound.generate
+	&SYSTEM echo      0.1380314E+08     0.6767878E+07 >> goodebound.generate
+	&SYSTEM echo      0.1391478E+08     0.6721377E+07 >> goodebound.generate
+	&SYSTEM echo      0.1402518E+08     0.6674600E+07 >> goodebound.generate
+	&SYSTEM echo      0.1413435E+08     0.6627550E+07 >> goodebound.generate
+	&SYSTEM echo      0.1424232E+08     0.6580233E+07 >> goodebound.generate
+	&SYSTEM echo      0.1434909E+08     0.6532650E+07 >> goodebound.generate
+	&SYSTEM echo      0.1445468E+08     0.6484807E+07 >> goodebound.generate
+	&SYSTEM echo      0.1455911E+08     0.6436705E+07 >> goodebound.generate
+	&SYSTEM echo      0.1466238E+08     0.6388350E+07 >> goodebound.generate
+	&SYSTEM echo      0.1476451E+08     0.6339743E+07 >> goodebound.generate
+	&SYSTEM echo      0.1486551E+08     0.6290889E+07 >> goodebound.generate
+	&SYSTEM echo      0.1496540E+08     0.6241791E+07 >> goodebound.generate
+	&SYSTEM echo      0.1506418E+08     0.6192452E+07 >> goodebound.generate
+	&SYSTEM echo      0.1516187E+08     0.6142875E+07 >> goodebound.generate
+	&SYSTEM echo      0.1525847E+08     0.6093063E+07 >> goodebound.generate
+	&SYSTEM echo      0.1535400E+08     0.6043020E+07 >> goodebound.generate
+	&SYSTEM echo      0.1544846E+08     0.5992748E+07 >> goodebound.generate
+	&SYSTEM echo      0.1554187E+08     0.5942250E+07 >> goodebound.generate
+	&SYSTEM echo      0.1563428E+08     0.5891502E+07 >> goodebound.generate
+	&SYSTEM echo      0.1572560E+08     0.5840566E+07 >> goodebound.generate
+	&SYSTEM echo      0.1581589E+08     0.5789412E+07 >> goodebound.generate
+	&SYSTEM echo      0.1590515E+08     0.5738043E+07 >> goodebound.generate
+	&SYSTEM echo      0.1599340E+08     0.5686463E+07 >> goodebound.generate
+	&SYSTEM echo      0.1608065E+08     0.5634673E+07 >> goodebound.generate
+	&SYSTEM echo      0.1616690E+08     0.5582677E+07 >> goodebound.generate
+	&SYSTEM echo      0.1625215E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1621416E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1617617E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1613818E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1610019E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1606220E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1602421E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1598623E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1594824E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1591025E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1587226E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1583427E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1579628E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1575829E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1572030E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1568231E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1564432E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1560633E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1556835E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1553036E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1549237E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1545438E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1541639E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1537840E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1534041E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1530242E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1526443E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1522644E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1518845E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1515046E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1511248E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1507449E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1503650E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1499851E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1496052E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1492253E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1488454E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1484655E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1480856E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1477057E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1473258E+08     0.5530478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1480694E+08     0.5478077E+07 >> goodebound.generate
+	&SYSTEM echo      0.1488043E+08     0.5425478E+07 >> goodebound.generate
+	&SYSTEM echo      0.1495306E+08     0.5372684E+07 >> goodebound.generate
+	&SYSTEM echo      0.1502483E+08     0.5319696E+07 >> goodebound.generate
+	&SYSTEM echo      0.1509576E+08     0.5266518E+07 >> goodebound.generate
+	&SYSTEM echo      0.1516584E+08     0.5213151E+07 >> goodebound.generate
+	&SYSTEM echo      0.1523509E+08     0.5159599E+07 >> goodebound.generate
+	&SYSTEM echo      0.1530349E+08     0.5105864E+07 >> goodebound.generate
+	&SYSTEM echo      0.1537107E+08     0.5051949E+07 >> goodebound.generate
+	&SYSTEM echo      0.1543782E+08     0.4997855E+07 >> goodebound.generate
+	&SYSTEM echo      0.1550375E+08     0.4943585E+07 >> goodebound.generate
+	&SYSTEM echo      0.1556886E+08     0.4889142E+07 >> goodebound.generate
+	&SYSTEM echo      0.1563316E+08     0.4834527E+07 >> goodebound.generate
+	&SYSTEM echo      0.1569665E+08     0.4779744E+07 >> goodebound.generate
+	&SYSTEM echo      0.1575932E+08     0.4724794E+07 >> goodebound.generate
+	&SYSTEM echo      0.1582120E+08     0.4669680E+07 >> goodebound.generate
+	&SYSTEM echo      0.1588228E+08     0.4614404E+07 >> goodebound.generate
+	&SYSTEM echo      0.1594255E+08     0.4558968E+07 >> goodebound.generate
+	&SYSTEM echo      0.1597399E+08     0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo      0.1606850E+08     0.4474105E+07 >> goodebound.generate
+	&SYSTEM echo      0.1616203E+08     0.4418508E+07 >> goodebound.generate
+	&SYSTEM echo      0.1625459E+08     0.4362910E+07 >> goodebound.generate
+	&SYSTEM echo      0.1634616E+08     0.4307313E+07 >> goodebound.generate
+	&SYSTEM echo      0.1643674E+08     0.4251715E+07 >> goodebound.generate
+	&SYSTEM echo      0.1652633E+08     0.4196118E+07 >> goodebound.generate
+	&SYSTEM echo      0.1661491E+08     0.4140520E+07 >> goodebound.generate
+	&SYSTEM echo      0.1670248E+08     0.4084923E+07 >> goodebound.generate
+	&SYSTEM echo      0.1678903E+08     0.4029325E+07 >> goodebound.generate
+	&SYSTEM echo      0.1687455E+08     0.3973728E+07 >> goodebound.generate
+	&SYSTEM echo      0.1695905E+08     0.3918131E+07 >> goodebound.generate
+	&SYSTEM echo      0.1704251E+08     0.3862533E+07 >> goodebound.generate
+	&SYSTEM echo      0.1712492E+08     0.3806936E+07 >> goodebound.generate
+	&SYSTEM echo      0.1720629E+08     0.3751338E+07 >> goodebound.generate
+	&SYSTEM echo      0.1728659E+08     0.3695741E+07 >> goodebound.generate
+	&SYSTEM echo      0.1736584E+08     0.3640143E+07 >> goodebound.generate
+	&SYSTEM echo      0.1744402E+08     0.3584546E+07 >> goodebound.generate
+	&SYSTEM echo      0.1752112E+08     0.3528949E+07 >> goodebound.generate
+	&SYSTEM echo      0.1759714E+08     0.3473351E+07 >> goodebound.generate
+	&SYSTEM echo      0.1767208E+08     0.3417754E+07 >> goodebound.generate
+	&SYSTEM echo      0.1774592E+08     0.3362156E+07 >> goodebound.generate
+	&SYSTEM echo      0.1781867E+08     0.3306559E+07 >> goodebound.generate
+	&SYSTEM echo      0.1789031E+08     0.3250961E+07 >> goodebound.generate
+	&SYSTEM echo      0.1796085E+08     0.3195364E+07 >> goodebound.generate
+	&SYSTEM echo      0.1803027E+08     0.3139766E+07 >> goodebound.generate
+	&SYSTEM echo      0.1809857E+08     0.3084169E+07 >> goodebound.generate
+	&SYSTEM echo      0.1816575E+08     0.3028572E+07 >> goodebound.generate
+	&SYSTEM echo      0.1823180E+08     0.2972974E+07 >> goodebound.generate
+	&SYSTEM echo      0.1829672E+08     0.2917377E+07 >> goodebound.generate
+	&SYSTEM echo      0.1836049E+08     0.2861779E+07 >> goodebound.generate
+	&SYSTEM echo      0.1842312E+08     0.2806182E+07 >> goodebound.generate
+	&SYSTEM echo      0.1848461E+08     0.2750584E+07 >> goodebound.generate
+	&SYSTEM echo      0.1854494E+08     0.2694987E+07 >> goodebound.generate
+	&SYSTEM echo      0.1860411E+08     0.2639390E+07 >> goodebound.generate
+	&SYSTEM echo      0.1866212E+08     0.2583792E+07 >> goodebound.generate
+	&SYSTEM echo      0.1871896E+08     0.2528195E+07 >> goodebound.generate
+	&SYSTEM echo      0.1877463E+08     0.2472597E+07 >> goodebound.generate
+	&SYSTEM echo      0.1882912E+08     0.2417000E+07 >> goodebound.generate
+	&SYSTEM echo      0.1888243E+08     0.2361402E+07 >> goodebound.generate
+	&SYSTEM echo      0.1893456E+08     0.2305805E+07 >> goodebound.generate
+	&SYSTEM echo      0.1898551E+08     0.2250207E+07 >> goodebound.generate
+	&SYSTEM echo      0.1903526E+08     0.2194610E+07 >> goodebound.generate
+	&SYSTEM echo      0.1908381E+08     0.2139013E+07 >> goodebound.generate
+	&SYSTEM echo      0.1913117E+08     0.2083415E+07 >> goodebound.generate
+	&SYSTEM echo      0.1917732E+08     0.2027818E+07 >> goodebound.generate
+	&SYSTEM echo      0.1922226E+08     0.1972220E+07 >> goodebound.generate
+	&SYSTEM echo      0.1926600E+08     0.1916623E+07 >> goodebound.generate
+	&SYSTEM echo      0.1930852E+08     0.1861025E+07 >> goodebound.generate
+	&SYSTEM echo      0.1934983E+08     0.1805428E+07 >> goodebound.generate
+	&SYSTEM echo      0.1938992E+08     0.1749830E+07 >> goodebound.generate
+	&SYSTEM echo      0.1942878E+08     0.1694233E+07 >> goodebound.generate
+	&SYSTEM echo      0.1946642E+08     0.1638636E+07 >> goodebound.generate
+	&SYSTEM echo      0.1950283E+08     0.1583038E+07 >> goodebound.generate
+	&SYSTEM echo      0.1953801E+08     0.1527441E+07 >> goodebound.generate
+	&SYSTEM echo      0.1957196E+08     0.1471843E+07 >> goodebound.generate
+	&SYSTEM echo      0.1960467E+08     0.1416246E+07 >> goodebound.generate
+	&SYSTEM echo      0.1963614E+08     0.1360648E+07 >> goodebound.generate
+	&SYSTEM echo      0.1966637E+08     0.1305051E+07 >> goodebound.generate
+	&SYSTEM echo      0.1969535E+08     0.1249454E+07 >> goodebound.generate
+	&SYSTEM echo      0.1972309E+08     0.1193856E+07 >> goodebound.generate
+	&SYSTEM echo      0.1974958E+08     0.1138259E+07 >> goodebound.generate
+	&SYSTEM echo      0.1977482E+08     0.1082661E+07 >> goodebound.generate
+	&SYSTEM echo      0.1979881E+08     0.1027064E+07 >> goodebound.generate
+	&SYSTEM echo      0.1982155E+08     0.9714663E+06 >> goodebound.generate
+	&SYSTEM echo      0.1984303E+08     0.9158689E+06 >> goodebound.generate
+	&SYSTEM echo      0.1986325E+08     0.8602714E+06 >> goodebound.generate
+	&SYSTEM echo      0.1988222E+08     0.8046740E+06 >> goodebound.generate
+	&SYSTEM echo      0.1989992E+08     0.7490766E+06 >> goodebound.generate
+	&SYSTEM echo      0.1991637E+08     0.6934791E+06 >> goodebound.generate
+	&SYSTEM echo      0.1993155E+08     0.6378817E+06 >> goodebound.generate
+	&SYSTEM echo      0.1994546E+08     0.5822843E+06 >> goodebound.generate
+	&SYSTEM echo      0.1995811E+08     0.5266868E+06 >> goodebound.generate
+	&SYSTEM echo      0.1996950E+08     0.4710894E+06 >> goodebound.generate
+	&SYSTEM echo      0.1997962E+08     0.4154919E+06 >> goodebound.generate
+	&SYSTEM echo      0.1998847E+08     0.3598945E+06 >> goodebound.generate
+	&SYSTEM echo      0.1999606E+08     0.3042971E+06 >> goodebound.generate
+	&SYSTEM echo      0.2000237E+08     0.2486996E+06 >> goodebound.generate
+	&SYSTEM echo      0.2000742E+08     0.1931022E+06 >> goodebound.generate
+	&SYSTEM echo      0.2001119E+08     0.1375047E+06 >> goodebound.generate
+	&SYSTEM echo      0.2001370E+08     0.8190730E+05 >> goodebound.generate
+	&SYSTEM echo      0.2001494E+08     0.2630987E+05 >> goodebound.generate
+	&SYSTEM echo      0.2001508E+08     0.0000000E+00 >> goodebound.generate
+	&SYSTEM echo      0.2001491E+08    -0.5559744E+05 >> goodebound.generate
+	&SYSTEM echo      0.2001440E+08    -0.1111949E+06 >> goodebound.generate
+	&SYSTEM echo      0.2001355E+08    -0.1667923E+06 >> goodebound.generate
+	&SYSTEM echo      0.2001237E+08    -0.2223898E+06 >> goodebound.generate
+	&SYSTEM echo      0.2001084E+08    -0.2779872E+06 >> goodebound.generate
+	&SYSTEM echo      0.2000898E+08    -0.3335846E+06 >> goodebound.generate
+	&SYSTEM echo      0.2000678E+08    -0.3891821E+06 >> goodebound.generate
+	&SYSTEM echo      0.2000424E+08    -0.4447795E+06 >> goodebound.generate
+	&SYSTEM echo      0.2000137E+08    -0.5003769E+06 >> goodebound.generate
+	&SYSTEM echo      0.1999815E+08    -0.5559744E+06 >> goodebound.generate
+	&SYSTEM echo      0.1999460E+08    -0.6115718E+06 >> goodebound.generate
+	&SYSTEM echo      0.1999071E+08    -0.6671693E+06 >> goodebound.generate
+	&SYSTEM echo      0.1998649E+08    -0.7227667E+06 >> goodebound.generate
+	&SYSTEM echo      0.1998192E+08    -0.7783641E+06 >> goodebound.generate
+	&SYSTEM echo      0.1997703E+08    -0.8339616E+06 >> goodebound.generate
+	&SYSTEM echo      0.1997179E+08    -0.8895590E+06 >> goodebound.generate
+	&SYSTEM echo      0.1996622E+08    -0.9451564E+06 >> goodebound.generate
+	&SYSTEM echo      0.1996032E+08    -0.1000754E+07 >> goodebound.generate
+	&SYSTEM echo      0.1995408E+08    -0.1056351E+07 >> goodebound.generate
+	&SYSTEM echo      0.1994751E+08    -0.1111949E+07 >> goodebound.generate
+	&SYSTEM echo      0.1994060E+08    -0.1167546E+07 >> goodebound.generate
+	&SYSTEM echo      0.1993336E+08    -0.1223144E+07 >> goodebound.generate
+	&SYSTEM echo      0.1992579E+08    -0.1278741E+07 >> goodebound.generate
+	&SYSTEM echo      0.1991788E+08    -0.1334339E+07 >> goodebound.generate
+	&SYSTEM echo      0.1990965E+08    -0.1389936E+07 >> goodebound.generate
+	&SYSTEM echo      0.1990108E+08    -0.1445533E+07 >> goodebound.generate
+	&SYSTEM echo      0.1989218E+08    -0.1501131E+07 >> goodebound.generate
+	&SYSTEM echo      0.1988296E+08    -0.1556728E+07 >> goodebound.generate
+	&SYSTEM echo      0.1987340E+08    -0.1612326E+07 >> goodebound.generate
+	&SYSTEM echo      0.1986352E+08    -0.1667923E+07 >> goodebound.generate
+	&SYSTEM echo      0.1985331E+08    -0.1723521E+07 >> goodebound.generate
+	&SYSTEM echo      0.1984278E+08    -0.1779118E+07 >> goodebound.generate
+	&SYSTEM echo      0.1983192E+08    -0.1834715E+07 >> goodebound.generate
+	&SYSTEM echo      0.1982073E+08    -0.1890313E+07 >> goodebound.generate
+	&SYSTEM echo      0.1980922E+08    -0.1945910E+07 >> goodebound.generate
+	&SYSTEM echo      0.1979739E+08    -0.2001508E+07 >> goodebound.generate
+	&SYSTEM echo      0.1978523E+08    -0.2057105E+07 >> goodebound.generate
+	&SYSTEM echo      0.1977276E+08    -0.2112703E+07 >> goodebound.generate
+	&SYSTEM echo      0.1975996E+08    -0.2168300E+07 >> goodebound.generate
+	&SYSTEM echo      0.1974684E+08    -0.2223898E+07 >> goodebound.generate
+	&SYSTEM echo      0.1973341E+08    -0.2279495E+07 >> goodebound.generate
+	&SYSTEM echo      0.1971966E+08    -0.2335092E+07 >> goodebound.generate
+	&SYSTEM echo      0.1970559E+08    -0.2390690E+07 >> goodebound.generate
+	&SYSTEM echo      0.1969121E+08    -0.2446287E+07 >> goodebound.generate
+	&SYSTEM echo      0.1967651E+08    -0.2501885E+07 >> goodebound.generate
+	&SYSTEM echo      0.1966150E+08    -0.2557482E+07 >> goodebound.generate
+	&SYSTEM echo      0.1964618E+08    -0.2613080E+07 >> goodebound.generate
+	&SYSTEM echo      0.1963055E+08    -0.2668677E+07 >> goodebound.generate
+	&SYSTEM echo      0.1961460E+08    -0.2724275E+07 >> goodebound.generate
+	&SYSTEM echo      0.1959835E+08    -0.2779872E+07 >> goodebound.generate
+	&SYSTEM echo      0.1958180E+08    -0.2835469E+07 >> goodebound.generate
+	&SYSTEM echo      0.1956493E+08    -0.2891067E+07 >> goodebound.generate
+	&SYSTEM echo      0.1954777E+08    -0.2946664E+07 >> goodebound.generate
+	&SYSTEM echo      0.1953030E+08    -0.3002262E+07 >> goodebound.generate
+	&SYSTEM echo      0.1951252E+08    -0.3057859E+07 >> goodebound.generate
+	&SYSTEM echo      0.1949445E+08    -0.3113457E+07 >> goodebound.generate
+	&SYSTEM echo      0.1947608E+08    -0.3169054E+07 >> goodebound.generate
+	&SYSTEM echo      0.1945741E+08    -0.3224651E+07 >> goodebound.generate
+	&SYSTEM echo      0.1943845E+08    -0.3280249E+07 >> goodebound.generate
+	&SYSTEM echo      0.1941919E+08    -0.3335846E+07 >> goodebound.generate
+	&SYSTEM echo      0.1939963E+08    -0.3391444E+07 >> goodebound.generate
+	&SYSTEM echo      0.1937979E+08    -0.3447041E+07 >> goodebound.generate
+	&SYSTEM echo      0.1935965E+08    -0.3502639E+07 >> goodebound.generate
+	&SYSTEM echo      0.1933923E+08    -0.3558236E+07 >> goodebound.generate
+	&SYSTEM echo      0.1931851E+08    -0.3613834E+07 >> goodebound.generate
+	&SYSTEM echo      0.1929752E+08    -0.3669431E+07 >> goodebound.generate
+	&SYSTEM echo      0.1927624E+08    -0.3725028E+07 >> goodebound.generate
+	&SYSTEM echo      0.1925467E+08    -0.3780626E+07 >> goodebound.generate
+	&SYSTEM echo      0.1923283E+08    -0.3836223E+07 >> goodebound.generate
+	&SYSTEM echo      0.1921070E+08    -0.3891821E+07 >> goodebound.generate
+	&SYSTEM echo      0.1918830E+08    -0.3947418E+07 >> goodebound.generate
+	&SYSTEM echo      0.1916562E+08    -0.4003016E+07 >> goodebound.generate
+	&SYSTEM echo      0.1914267E+08    -0.4058613E+07 >> goodebound.generate
+	&SYSTEM echo      0.1911945E+08    -0.4114210E+07 >> goodebound.generate
+	&SYSTEM echo      0.1909596E+08    -0.4169808E+07 >> goodebound.generate
+	&SYSTEM echo      0.1907219E+08    -0.4225405E+07 >> goodebound.generate
+	&SYSTEM echo      0.1904816E+08    -0.4281003E+07 >> goodebound.generate
+	&SYSTEM echo      0.1902387E+08    -0.4336600E+07 >> goodebound.generate
+	&SYSTEM echo      0.1899931E+08    -0.4392198E+07 >> goodebound.generate
+	&SYSTEM echo      0.1897449E+08    -0.4447795E+07 >> goodebound.generate
+	&SYSTEM echo      0.1894941E+08    -0.4503393E+07 >> goodebound.generate
+	&SYSTEM echo      0.1893745E+08    -0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo      0.1892149E+08    -0.4585221E+07 >> goodebound.generate
+	&SYSTEM echo      0.1890532E+08    -0.4640582E+07 >> goodebound.generate
+	&SYSTEM echo      0.1888893E+08    -0.4695781E+07 >> goodebound.generate
+	&SYSTEM echo      0.1887233E+08    -0.4750818E+07 >> goodebound.generate
+	&SYSTEM echo      0.1885551E+08    -0.4805689E+07 >> goodebound.generate
+	&SYSTEM echo      0.1883848E+08    -0.4860393E+07 >> goodebound.generate
+	&SYSTEM echo      0.1882123E+08    -0.4914927E+07 >> goodebound.generate
+	&SYSTEM echo      0.1880376E+08    -0.4969288E+07 >> goodebound.generate
+	&SYSTEM echo      0.1878608E+08    -0.5023475E+07 >> goodebound.generate
+	&SYSTEM echo      0.1876818E+08    -0.5077485E+07 >> goodebound.generate
+	&SYSTEM echo      0.1875005E+08    -0.5131316E+07 >> goodebound.generate
+	&SYSTEM echo      0.1873170E+08    -0.5184964E+07 >> goodebound.generate
+	&SYSTEM echo      0.1871313E+08    -0.5238429E+07 >> goodebound.generate
+	&SYSTEM echo      0.1869434E+08    -0.5291706E+07 >> goodebound.generate
+	&SYSTEM echo      0.1867532E+08    -0.5344795E+07 >> goodebound.generate
+	&SYSTEM echo      0.1865607E+08    -0.5397691E+07 >> goodebound.generate
+	&SYSTEM echo      0.1863659E+08    -0.5450394E+07 >> goodebound.generate
+	&SYSTEM echo      0.1861689E+08    -0.5502899E+07 >> goodebound.generate
+	&SYSTEM echo      0.1859695E+08    -0.5555205E+07 >> goodebound.generate
+	&SYSTEM echo      0.1857678E+08    -0.5607308E+07 >> goodebound.generate
+	&SYSTEM echo      0.1855637E+08    -0.5659207E+07 >> goodebound.generate
+	&SYSTEM echo      0.1853573E+08    -0.5710898E+07 >> goodebound.generate
+	&SYSTEM echo      0.1851486E+08    -0.5762379E+07 >> goodebound.generate
+	&SYSTEM echo      0.1849374E+08    -0.5813646E+07 >> goodebound.generate
+	&SYSTEM echo      0.1847238E+08    -0.5864697E+07 >> goodebound.generate
+	&SYSTEM echo      0.1845078E+08    -0.5915529E+07 >> goodebound.generate
+	&SYSTEM echo      0.1842892E+08    -0.5966175E+07 >> goodebound.generate
+	&SYSTEM echo      0.1840682E+08    -0.6016566E+07 >> goodebound.generate
+	&SYSTEM echo      0.1838448E+08    -0.6066730E+07 >> goodebound.generate
+	&SYSTEM echo      0.1836188E+08    -0.6116664E+07 >> goodebound.generate
+	&SYSTEM echo      0.1833903E+08    -0.6166365E+07 >> goodebound.generate
+	&SYSTEM echo      0.1831592E+08    -0.6215830E+07 >> goodebound.generate
+	&SYSTEM echo      0.1829256E+08    -0.6265056E+07 >> goodebound.generate
+	&SYSTEM echo      0.1826893E+08    -0.6314039E+07 >> goodebound.generate
+	&SYSTEM echo      0.1824504E+08    -0.6362776E+07 >> goodebound.generate
+	&SYSTEM echo      0.1822088E+08    -0.6411264E+07 >> goodebound.generate
+	&SYSTEM echo      0.1819646E+08    -0.6459500E+07 >> goodebound.generate
+	&SYSTEM echo      0.1817176E+08    -0.6507479E+07 >> goodebound.generate
+	&SYSTEM echo      0.1814678E+08    -0.6555200E+07 >> goodebound.generate
+	&SYSTEM echo      0.1812152E+08    -0.6602658E+07 >> goodebound.generate
+	&SYSTEM echo      0.1809599E+08    -0.6649849E+07 >> goodebound.generate
+	&SYSTEM echo      0.1807016E+08    -0.6696770E+07 >> goodebound.generate
+	&SYSTEM echo      0.1804405E+08    -0.6743417E+07 >> goodebound.generate
+	&SYSTEM echo      0.1801764E+08    -0.6789786E+07 >> goodebound.generate
+	&SYSTEM echo      0.1799093E+08    -0.6835873E+07 >> goodebound.generate
+	&SYSTEM echo      0.1796392E+08    -0.6881674E+07 >> goodebound.generate
+	&SYSTEM echo      0.1793661E+08    -0.6927186E+07 >> goodebound.generate
+	&SYSTEM echo      0.1790898E+08    -0.6972403E+07 >> goodebound.generate
+	&SYSTEM echo      0.1788103E+08    -0.7017321E+07 >> goodebound.generate
+	&SYSTEM echo      0.1785277E+08    -0.7061936E+07 >> goodebound.generate
+	&SYSTEM echo      0.1782417E+08    -0.7106244E+07 >> goodebound.generate
+	&SYSTEM echo      0.1779524E+08    -0.7150239E+07 >> goodebound.generate
+	&SYSTEM echo      0.1776597E+08    -0.7193916E+07 >> goodebound.generate
+	&SYSTEM echo      0.1773636E+08    -0.7237271E+07 >> goodebound.generate
+	&SYSTEM echo      0.1770639E+08    -0.7280299E+07 >> goodebound.generate
+	&SYSTEM echo      0.1767606E+08    -0.7322993E+07 >> goodebound.generate
+	&SYSTEM echo      0.1764537E+08    -0.7365349E+07 >> goodebound.generate
+	&SYSTEM echo      0.1761430E+08    -0.7407361E+07 >> goodebound.generate
+	&SYSTEM echo      0.1758284E+08    -0.7449022E+07 >> goodebound.generate
+	&SYSTEM echo      0.1755099E+08    -0.7490327E+07 >> goodebound.generate
+	&SYSTEM echo      0.1751873E+08    -0.7531268E+07 >> goodebound.generate
+	&SYSTEM echo      0.1748607E+08    -0.7571840E+07 >> goodebound.generate
+	&SYSTEM echo      0.1745298E+08    -0.7612034E+07 >> goodebound.generate
+	&SYSTEM echo      0.1741943E+08    -0.7651868E+07 >> goodebound.generate
+	&SYSTEM echo      0.1738544E+08    -0.7691294E+07 >> goodebound.generate
+	&SYSTEM echo      0.1735100E+08    -0.7730321E+07 >> goodebound.generate
+	&SYSTEM echo      0.1731607E+08    -0.7768942E+07 >> goodebound.generate
+	&SYSTEM echo      0.1728065E+08    -0.7807147E+07 >> goodebound.generate
+	&SYSTEM echo      0.1724472E+08    -0.7844929E+07 >> goodebound.generate
+	&SYSTEM echo      0.1720826E+08    -0.7882277E+07 >> goodebound.generate
+	&SYSTEM echo      0.1717125E+08    -0.7919181E+07 >> goodebound.generate
+	&SYSTEM echo      0.1713367E+08    -0.7955632E+07 >> goodebound.generate
+	&SYSTEM echo      0.1709550E+08    -0.7991617E+07 >> goodebound.generate
+	&SYSTEM echo      0.1705670E+08    -0.8027125E+07 >> goodebound.generate
+	&SYSTEM echo      0.1701725E+08    -0.8062143E+07 >> goodebound.generate
+	&SYSTEM echo      0.1697713E+08    -0.8096658E+07 >> goodebound.generate
+	&SYSTEM echo      0.1693629E+08    -0.8130656E+07 >> goodebound.generate
+	&SYSTEM echo      0.1689469E+08    -0.8164119E+07 >> goodebound.generate
+	&SYSTEM echo      0.1685230E+08    -0.8197032E+07 >> goodebound.generate
+	&SYSTEM echo      0.1680907E+08    -0.8229376E+07 >> goodebound.generate
+	&SYSTEM echo      0.1676493E+08    -0.8261130E+07 >> goodebound.generate
+	&SYSTEM echo      0.1671982E+08    -0.8292290E+07 >> goodebound.generate
+	&SYSTEM echo      0.1667369E+08    -0.8322807E+07 >> goodebound.generate
+	&SYSTEM echo      0.1662644E+08    -0.8352664E+07 >> goodebound.generate
+	&SYSTEM echo      0.1657798E+08    -0.8381833E+07 >> goodebound.generate
+	&SYSTEM echo      0.1652821E+08    -0.8410281E+07 >> goodebound.generate
+	&SYSTEM echo      0.1647698E+08    -0.8437971E+07 >> goodebound.generate
+	&SYSTEM echo      0.1642413E+08    -0.8464861E+07 >> goodebound.generate
+	&SYSTEM echo      0.1636948E+08    -0.8490900E+07 >> goodebound.generate
+	&SYSTEM echo      0.1631275E+08    -0.8516038E+07 >> goodebound.generate
+	&SYSTEM echo      0.1625366E+08    -0.8540199E+07 >> goodebound.generate
+	&SYSTEM echo      0.1619177E+08    -0.8563302E+07 >> goodebound.generate
+	&SYSTEM echo      0.1612652E+08    -0.8585243E+07 >> goodebound.generate
+	&SYSTEM echo      0.1605710E+08    -0.8605883E+07 >> goodebound.generate
+	&SYSTEM echo      0.1598218E+08    -0.8625049E+07 >> goodebound.generate
+	&SYSTEM echo      0.1589962E+08    -0.8642457E+07 >> goodebound.generate
+	&SYSTEM echo      0.1580489E+08    -0.8657664E+07 >> goodebound.generate
+	&SYSTEM echo      0.1568420E+08    -0.8669698E+07 >> goodebound.generate
+	&SYSTEM echo      0.1556712E+08    -0.8673540E+07 >> goodebound.generate
+	&SYSTEM echo      0.1556712E+08    -0.8673540E+07 >> goodebound.generate
+	&SYSTEM echo      0.1539191E+08    -0.8669698E+07 >> goodebound.generate
+	&SYSTEM echo      0.1521087E+08    -0.8657664E+07 >> goodebound.generate
+	&SYSTEM echo      0.1506878E+08    -0.8642457E+07 >> goodebound.generate
+	&SYSTEM echo      0.1494494E+08    -0.8625049E+07 >> goodebound.generate
+	&SYSTEM echo      0.1483256E+08    -0.8605883E+07 >> goodebound.generate
+	&SYSTEM echo      0.1472842E+08    -0.8585243E+07 >> goodebound.generate
+	&SYSTEM echo      0.1463055E+08    -0.8563302E+07 >> goodebound.generate
+	&SYSTEM echo      0.1453772E+08    -0.8540199E+07 >> goodebound.generate
+	&SYSTEM echo      0.1444908E+08    -0.8516038E+07 >> goodebound.generate
+	&SYSTEM echo      0.1436399E+08    -0.8490900E+07 >> goodebound.generate
+	&SYSTEM echo      0.1428201E+08    -0.8464861E+07 >> goodebound.generate
+	&SYSTEM echo      0.1420274E+08    -0.8437971E+07 >> goodebound.generate
+	&SYSTEM echo      0.1412590E+08    -0.8410281E+07 >> goodebound.generate
+	&SYSTEM echo      0.1405123E+08    -0.8381833E+07 >> goodebound.generate
+	&SYSTEM echo      0.1397855E+08    -0.8352664E+07 >> goodebound.generate
+	&SYSTEM echo      0.1390768E+08    -0.8322807E+07 >> goodebound.generate
+	&SYSTEM echo      0.1383848E+08    -0.8292290E+07 >> goodebound.generate
+	&SYSTEM echo      0.1377081E+08    -0.8261130E+07 >> goodebound.generate
+	&SYSTEM echo      0.1370461E+08    -0.8229376E+07 >> goodebound.generate
+	&SYSTEM echo      0.1363976E+08    -0.8197032E+07 >> goodebound.generate
+	&SYSTEM echo      0.1357617E+08    -0.8164119E+07 >> goodebound.generate
+	&SYSTEM echo      0.1351378E+08    -0.8130656E+07 >> goodebound.generate
+	&SYSTEM echo      0.1345251E+08    -0.8096658E+07 >> goodebound.generate
+	&SYSTEM echo      0.1339232E+08    -0.8062143E+07 >> goodebound.generate
+	&SYSTEM echo      0.1333316E+08    -0.8027125E+07 >> goodebound.generate
+	&SYSTEM echo      0.1327496E+08    -0.7991617E+07 >> goodebound.generate
+	&SYSTEM echo      0.1321770E+08    -0.7955632E+07 >> goodebound.generate
+	&SYSTEM echo      0.1316133E+08    -0.7919181E+07 >> goodebound.generate
+	&SYSTEM echo      0.1310581E+08    -0.7882277E+07 >> goodebound.generate
+	&SYSTEM echo      0.1305112E+08    -0.7844929E+07 >> goodebound.generate
+	&SYSTEM echo      0.1299723E+08    -0.7807147E+07 >> goodebound.generate
+	&SYSTEM echo      0.1294410E+08    -0.7768942E+07 >> goodebound.generate
+	&SYSTEM echo      0.1289171E+08    -0.7730321E+07 >> goodebound.generate
+	&SYSTEM echo      0.1284004E+08    -0.7691294E+07 >> goodebound.generate
+	&SYSTEM echo      0.1278907E+08    -0.7651868E+07 >> goodebound.generate
+	&SYSTEM echo      0.1273874E+08    -0.7612034E+07 >> goodebound.generate
+	&SYSTEM echo      0.1268911E+08    -0.7571840E+07 >> goodebound.generate
+	&SYSTEM echo      0.1264010E+08    -0.7531268E+07 >> goodebound.generate
+	&SYSTEM echo      0.1259172E+08    -0.7490327E+07 >> goodebound.generate
+	&SYSTEM echo      0.1254395E+08    -0.7449022E+07 >> goodebound.generate
+	&SYSTEM echo      0.1249676E+08    -0.7407361E+07 >> goodebound.generate
+	&SYSTEM echo      0.1245015E+08    -0.7365349E+07 >> goodebound.generate
+	&SYSTEM echo      0.1240411E+08    -0.7322993E+07 >> goodebound.generate
+	&SYSTEM echo      0.1235862E+08    -0.7280299E+07 >> goodebound.generate
+	&SYSTEM echo      0.1231367E+08    -0.7237271E+07 >> goodebound.generate
+	&SYSTEM echo      0.1226924E+08    -0.7193916E+07 >> goodebound.generate
+	&SYSTEM echo      0.1222534E+08    -0.7150239E+07 >> goodebound.generate
+	&SYSTEM echo      0.1218195E+08    -0.7106244E+07 >> goodebound.generate
+	&SYSTEM echo      0.1213906E+08    -0.7061936E+07 >> goodebound.generate
+	&SYSTEM echo      0.1209665E+08    -0.7017321E+07 >> goodebound.generate
+	&SYSTEM echo      0.1205474E+08    -0.6972403E+07 >> goodebound.generate
+	&SYSTEM echo      0.1201329E+08    -0.6927186E+07 >> goodebound.generate
+	&SYSTEM echo      0.1197232E+08    -0.6881674E+07 >> goodebound.generate
+	&SYSTEM echo      0.1193181E+08    -0.6835873E+07 >> goodebound.generate
+	&SYSTEM echo      0.1189175E+08    -0.6789786E+07 >> goodebound.generate
+	&SYSTEM echo      0.1185213E+08    -0.6743417E+07 >> goodebound.generate
+	&SYSTEM echo      0.1181296E+08    -0.6696770E+07 >> goodebound.generate
+	&SYSTEM echo      0.1177423E+08    -0.6649849E+07 >> goodebound.generate
+	&SYSTEM echo      0.1173592E+08    -0.6602658E+07 >> goodebound.generate
+	&SYSTEM echo      0.1169804E+08    -0.6555200E+07 >> goodebound.generate
+	&SYSTEM echo      0.1166057E+08    -0.6507479E+07 >> goodebound.generate
+	&SYSTEM echo      0.1162352E+08    -0.6459500E+07 >> goodebound.generate
+	&SYSTEM echo      0.1158688E+08    -0.6411264E+07 >> goodebound.generate
+	&SYSTEM echo      0.1155064E+08    -0.6362776E+07 >> goodebound.generate
+	&SYSTEM echo      0.1151481E+08    -0.6314039E+07 >> goodebound.generate
+	&SYSTEM echo      0.1147937E+08    -0.6265056E+07 >> goodebound.generate
+	&SYSTEM echo      0.1144432E+08    -0.6215830E+07 >> goodebound.generate
+	&SYSTEM echo      0.1140966E+08    -0.6166365E+07 >> goodebound.generate
+	&SYSTEM echo      0.1137538E+08    -0.6116664E+07 >> goodebound.generate
+	&SYSTEM echo      0.1134149E+08    -0.6066730E+07 >> goodebound.generate
+	&SYSTEM echo      0.1130797E+08    -0.6016566E+07 >> goodebound.generate
+	&SYSTEM echo      0.1127483E+08    -0.5966175E+07 >> goodebound.generate
+	&SYSTEM echo      0.1124204E+08    -0.5915529E+07 >> goodebound.generate
+	&SYSTEM echo      0.1120963E+08    -0.5864697E+07 >> goodebound.generate
+	&SYSTEM echo      0.1117760E+08    -0.5813646E+07 >> goodebound.generate
+	&SYSTEM echo      0.1114592E+08    -0.5762379E+07 >> goodebound.generate
+	&SYSTEM echo      0.1111461E+08    -0.5710898E+07 >> goodebound.generate
+	&SYSTEM echo      0.1108364E+08    -0.5659207E+07 >> goodebound.generate
+	&SYSTEM echo      0.1105304E+08    -0.5607308E+07 >> goodebound.generate
+	&SYSTEM echo      0.1102278E+08    -0.5555205E+07 >> goodebound.generate
+	&SYSTEM echo      0.1099288E+08    -0.5502899E+07 >> goodebound.generate
+	&SYSTEM echo      0.1096332E+08    -0.5450394E+07 >> goodebound.generate
+	&SYSTEM echo      0.1093410E+08    -0.5397691E+07 >> goodebound.generate
+	&SYSTEM echo      0.1090523E+08    -0.5344795E+07 >> goodebound.generate
+	&SYSTEM echo      0.1087670E+08    -0.5291706E+07 >> goodebound.generate
+	&SYSTEM echo      0.1084851E+08    -0.5238429E+07 >> goodebound.generate
+	&SYSTEM echo      0.1082065E+08    -0.5184964E+07 >> goodebound.generate
+	&SYSTEM echo      0.1079313E+08    -0.5131316E+07 >> goodebound.generate
+	&SYSTEM echo      0.1076594E+08    -0.5077485E+07 >> goodebound.generate
+	&SYSTEM echo      0.1073909E+08    -0.5023475E+07 >> goodebound.generate
+	&SYSTEM echo      0.1071256E+08    -0.4969288E+07 >> goodebound.generate
+	&SYSTEM echo      0.1068636E+08    -0.4914927E+07 >> goodebound.generate
+	&SYSTEM echo      0.1066049E+08    -0.4860393E+07 >> goodebound.generate
+	&SYSTEM echo      0.1063494E+08    -0.4805689E+07 >> goodebound.generate
+	&SYSTEM echo      0.1060972E+08    -0.4750818E+07 >> goodebound.generate
+	&SYSTEM echo      0.1058481E+08    -0.4695781E+07 >> goodebound.generate
+	&SYSTEM echo      0.1056023E+08    -0.4640582E+07 >> goodebound.generate
+	&SYSTEM echo      0.1053597E+08    -0.4585221E+07 >> goodebound.generate
+	&SYSTEM echo      0.1051202E+08    -0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo      0.1051202E+08    -0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo      0.1049409E+08    -0.4503393E+07 >> goodebound.generate
+	&SYSTEM echo      0.1045647E+08    -0.4447795E+07 >> goodebound.generate
+	&SYSTEM echo      0.1041924E+08    -0.4392198E+07 >> goodebound.generate
+	&SYSTEM echo      0.1038240E+08    -0.4336600E+07 >> goodebound.generate
+	&SYSTEM echo      0.1034596E+08    -0.4281003E+07 >> goodebound.generate
+	&SYSTEM echo      0.1030992E+08    -0.4225405E+07 >> goodebound.generate
+	&SYSTEM echo      0.1027427E+08    -0.4169808E+07 >> goodebound.generate
+	&SYSTEM echo      0.1023903E+08    -0.4114210E+07 >> goodebound.generate
+	&SYSTEM echo      0.1020420E+08    -0.4058613E+07 >> goodebound.generate
+	&SYSTEM echo      0.1016977E+08    -0.4003016E+07 >> goodebound.generate
+	&SYSTEM echo      0.1013575E+08    -0.3947418E+07 >> goodebound.generate
+	&SYSTEM echo      0.1010215E+08    -0.3891821E+07 >> goodebound.generate
+	&SYSTEM echo      0.1006897E+08    -0.3836223E+07 >> goodebound.generate
+	&SYSTEM echo      0.1003620E+08    -0.3780626E+07 >> goodebound.generate
+	&SYSTEM echo      0.1000385E+08    -0.3725028E+07 >> goodebound.generate
+	&SYSTEM echo      0.9971930E+07    -0.3669431E+07 >> goodebound.generate
+	&SYSTEM echo      0.9940434E+07    -0.3613834E+07 >> goodebound.generate
+	&SYSTEM echo      0.9909366E+07    -0.3558236E+07 >> goodebound.generate
+	&SYSTEM echo      0.9878729E+07    -0.3502639E+07 >> goodebound.generate
+	&SYSTEM echo      0.9848526E+07    -0.3447041E+07 >> goodebound.generate
+	&SYSTEM echo      0.9818758E+07    -0.3391444E+07 >> goodebound.generate
+	&SYSTEM echo      0.9789427E+07    -0.3335846E+07 >> goodebound.generate
+	&SYSTEM echo      0.9760537E+07    -0.3280249E+07 >> goodebound.generate
+	&SYSTEM echo      0.9732089E+07    -0.3224651E+07 >> goodebound.generate
+	&SYSTEM echo      0.9704085E+07    -0.3169054E+07 >> goodebound.generate
+	&SYSTEM echo      0.9676528E+07    -0.3113457E+07 >> goodebound.generate
+	&SYSTEM echo      0.9649419E+07    -0.3057859E+07 >> goodebound.generate
+	&SYSTEM echo      0.9622761E+07    -0.3002262E+07 >> goodebound.generate
+	&SYSTEM echo      0.9596556E+07    -0.2946664E+07 >> goodebound.generate
+	&SYSTEM echo      0.9570805E+07    -0.2891067E+07 >> goodebound.generate
+	&SYSTEM echo      0.9545511E+07    -0.2835469E+07 >> goodebound.generate
+	&SYSTEM echo      0.9520676E+07    -0.2779872E+07 >> goodebound.generate
+	&SYSTEM echo      0.9496301E+07    -0.2724275E+07 >> goodebound.generate
+	&SYSTEM echo      0.9472388E+07    -0.2668677E+07 >> goodebound.generate
+	&SYSTEM echo      0.9448940E+07    -0.2613080E+07 >> goodebound.generate
+	&SYSTEM echo      0.9425957E+07    -0.2557482E+07 >> goodebound.generate
+	&SYSTEM echo      0.9403442E+07    -0.2501885E+07 >> goodebound.generate
+	&SYSTEM echo      0.9381397E+07    -0.2446287E+07 >> goodebound.generate
+	&SYSTEM echo      0.9359823E+07    -0.2390690E+07 >> goodebound.generate
+	&SYSTEM echo      0.9338721E+07    -0.2335092E+07 >> goodebound.generate
+	&SYSTEM echo      0.9318094E+07    -0.2279495E+07 >> goodebound.generate
+	&SYSTEM echo      0.9297942E+07    -0.2223898E+07 >> goodebound.generate
+	&SYSTEM echo      0.9278268E+07    -0.2168300E+07 >> goodebound.generate
+	&SYSTEM echo      0.9259073E+07    -0.2112703E+07 >> goodebound.generate
+	&SYSTEM echo      0.9240359E+07    -0.2057105E+07 >> goodebound.generate
+	&SYSTEM echo      0.9222126E+07    -0.2001508E+07 >> goodebound.generate
+	&SYSTEM echo      0.9204376E+07    -0.1945910E+07 >> goodebound.generate
+	&SYSTEM echo      0.9187111E+07    -0.1890313E+07 >> goodebound.generate
+	&SYSTEM echo      0.9170332E+07    -0.1834715E+07 >> goodebound.generate
+	&SYSTEM echo      0.9154040E+07    -0.1779118E+07 >> goodebound.generate
+	&SYSTEM echo      0.9138236E+07    -0.1723521E+07 >> goodebound.generate
+	&SYSTEM echo      0.9122922E+07    -0.1667923E+07 >> goodebound.generate
+	&SYSTEM echo      0.9108099E+07    -0.1612326E+07 >> goodebound.generate
+	&SYSTEM echo      0.9093768E+07    -0.1556728E+07 >> goodebound.generate
+	&SYSTEM echo      0.9079929E+07    -0.1501131E+07 >> goodebound.generate
+	&SYSTEM echo      0.9066585E+07    -0.1445533E+07 >> goodebound.generate
+	&SYSTEM echo      0.9053736E+07    -0.1389936E+07 >> goodebound.generate
+	&SYSTEM echo      0.9041382E+07    -0.1334339E+07 >> goodebound.generate
+	&SYSTEM echo      0.9029526E+07    -0.1278741E+07 >> goodebound.generate
+	&SYSTEM echo      0.9018168E+07    -0.1223144E+07 >> goodebound.generate
+	&SYSTEM echo      0.9007308E+07    -0.1167546E+07 >> goodebound.generate
+	&SYSTEM echo      0.8996948E+07    -0.1111949E+07 >> goodebound.generate
+	&SYSTEM echo      0.8987088E+07    -0.1056351E+07 >> goodebound.generate
+	&SYSTEM echo      0.8977730E+07    -0.1000754E+07 >> goodebound.generate
+	&SYSTEM echo      0.8968873E+07    -0.9451564E+06 >> goodebound.generate
+	&SYSTEM echo      0.8960518E+07    -0.8895590E+06 >> goodebound.generate
+	&SYSTEM echo      0.8952667E+07    -0.8339616E+06 >> goodebound.generate
+	&SYSTEM echo      0.8945320E+07    -0.7783641E+06 >> goodebound.generate
+	&SYSTEM echo      0.8938477E+07    -0.7227667E+06 >> goodebound.generate
+	&SYSTEM echo      0.8932138E+07    -0.6671693E+06 >> goodebound.generate
+	&SYSTEM echo      0.8926305E+07    -0.6115718E+06 >> goodebound.generate
+	&SYSTEM echo      0.8920978E+07    -0.5559744E+06 >> goodebound.generate
+	&SYSTEM echo      0.8916157E+07    -0.5003769E+06 >> goodebound.generate
+	&SYSTEM echo      0.8911842E+07    -0.4447795E+06 >> goodebound.generate
+	&SYSTEM echo      0.8908034E+07    -0.3891821E+06 >> goodebound.generate
+	&SYSTEM echo      0.8904733E+07    -0.3335846E+06 >> goodebound.generate
+	&SYSTEM echo      0.8901940E+07    -0.2779872E+06 >> goodebound.generate
+	&SYSTEM echo      0.8899654E+07    -0.2223898E+06 >> goodebound.generate
+	&SYSTEM echo      0.8897876E+07    -0.1667923E+06 >> goodebound.generate
+	&SYSTEM echo      0.8894574E+07    -0.1111949E+06 >> goodebound.generate
+	&SYSTEM echo      0.8893304E+07    -0.1667923E+06 >> goodebound.generate
+	&SYSTEM echo      0.8891526E+07    -0.2223898E+06 >> goodebound.generate
+	&SYSTEM echo      0.8889240E+07    -0.2779872E+06 >> goodebound.generate
+	&SYSTEM echo      0.8886447E+07    -0.3335846E+06 >> goodebound.generate
+	&SYSTEM echo      0.8883146E+07    -0.3891821E+06 >> goodebound.generate
+	&SYSTEM echo      0.8879338E+07    -0.4447795E+06 >> goodebound.generate
+	&SYSTEM echo      0.8875023E+07    -0.5003769E+06 >> goodebound.generate
+	&SYSTEM echo      0.8870202E+07    -0.5559744E+06 >> goodebound.generate
+	&SYSTEM echo      0.8864875E+07    -0.6115718E+06 >> goodebound.generate
+	&SYSTEM echo      0.8859042E+07    -0.6671693E+06 >> goodebound.generate
+	&SYSTEM echo      0.8852703E+07    -0.7227667E+06 >> goodebound.generate
+	&SYSTEM echo      0.8845860E+07    -0.7783641E+06 >> goodebound.generate
+	&SYSTEM echo      0.8838513E+07    -0.8339616E+06 >> goodebound.generate
+	&SYSTEM echo      0.8830661E+07    -0.8895590E+06 >> goodebound.generate
+	&SYSTEM echo      0.8822307E+07    -0.9451564E+06 >> goodebound.generate
+	&SYSTEM echo      0.8813450E+07    -0.1000754E+07 >> goodebound.generate
+	&SYSTEM echo      0.8804092E+07    -0.1056351E+07 >> goodebound.generate
+	&SYSTEM echo      0.8794232E+07    -0.1111949E+07 >> goodebound.generate
+	&SYSTEM echo      0.8783872E+07    -0.1167546E+07 >> goodebound.generate
+	&SYSTEM echo      0.8773012E+07    -0.1223144E+07 >> goodebound.generate
+	&SYSTEM echo      0.8761654E+07    -0.1278741E+07 >> goodebound.generate
+	&SYSTEM echo      0.8749797E+07    -0.1334339E+07 >> goodebound.generate
+	&SYSTEM echo      0.8737444E+07    -0.1389936E+07 >> goodebound.generate
+	&SYSTEM echo      0.8724595E+07    -0.1445533E+07 >> goodebound.generate
+	&SYSTEM echo      0.8711251E+07    -0.1501131E+07 >> goodebound.generate
+	&SYSTEM echo      0.8697412E+07    -0.1556728E+07 >> goodebound.generate
+	&SYSTEM echo      0.8683081E+07    -0.1612326E+07 >> goodebound.generate
+	&SYSTEM echo      0.8668258E+07    -0.1667923E+07 >> goodebound.generate
+	&SYSTEM echo      0.8652944E+07    -0.1723521E+07 >> goodebound.generate
+	&SYSTEM echo      0.8637140E+07    -0.1779118E+07 >> goodebound.generate
+	&SYSTEM echo      0.8620848E+07    -0.1834715E+07 >> goodebound.generate
+	&SYSTEM echo      0.8604069E+07    -0.1890313E+07 >> goodebound.generate
+	&SYSTEM echo      0.8586804E+07    -0.1945910E+07 >> goodebound.generate
+	&SYSTEM echo      0.8569054E+07    -0.2001508E+07 >> goodebound.generate
+	&SYSTEM echo      0.8550821E+07    -0.2057105E+07 >> goodebound.generate
+	&SYSTEM echo      0.8532107E+07    -0.2112703E+07 >> goodebound.generate
+	&SYSTEM echo      0.8512912E+07    -0.2168300E+07 >> goodebound.generate
+	&SYSTEM echo      0.8493238E+07    -0.2223898E+07 >> goodebound.generate
+	&SYSTEM echo      0.8473086E+07    -0.2279495E+07 >> goodebound.generate
+	&SYSTEM echo      0.8452459E+07    -0.2335092E+07 >> goodebound.generate
+	&SYSTEM echo      0.8431357E+07    -0.2390690E+07 >> goodebound.generate
+	&SYSTEM echo      0.8409783E+07    -0.2446287E+07 >> goodebound.generate
+	&SYSTEM echo      0.8387738E+07    -0.2501885E+07 >> goodebound.generate
+	&SYSTEM echo      0.8365223E+07    -0.2557482E+07 >> goodebound.generate
+	&SYSTEM echo      0.8342241E+07    -0.2613080E+07 >> goodebound.generate
+	&SYSTEM echo      0.8318792E+07    -0.2668677E+07 >> goodebound.generate
+	&SYSTEM echo      0.8294879E+07    -0.2724275E+07 >> goodebound.generate
+	&SYSTEM echo      0.8270505E+07    -0.2779872E+07 >> goodebound.generate
+	&SYSTEM echo      0.8245669E+07    -0.2835469E+07 >> goodebound.generate
+	&SYSTEM echo      0.8220375E+07    -0.2891067E+07 >> goodebound.generate
+	&SYSTEM echo      0.8194625E+07    -0.2946664E+07 >> goodebound.generate
+	&SYSTEM echo      0.8168419E+07    -0.3002262E+07 >> goodebound.generate
+	&SYSTEM echo      0.8141761E+07    -0.3057859E+07 >> goodebound.generate
+	&SYSTEM echo      0.8114653E+07    -0.3113457E+07 >> goodebound.generate
+	&SYSTEM echo      0.8087095E+07    -0.3169054E+07 >> goodebound.generate
+	&SYSTEM echo      0.8059091E+07    -0.3224651E+07 >> goodebound.generate
+	&SYSTEM echo      0.8030643E+07    -0.3280249E+07 >> goodebound.generate
+	&SYSTEM echo      0.8001753E+07    -0.3335846E+07 >> goodebound.generate
+	&SYSTEM echo      0.7972423E+07    -0.3391444E+07 >> goodebound.generate
+	&SYSTEM echo      0.7942654E+07    -0.3447041E+07 >> goodebound.generate
+	&SYSTEM echo      0.7912451E+07    -0.3502639E+07 >> goodebound.generate
+	&SYSTEM echo      0.7881814E+07    -0.3558236E+07 >> goodebound.generate
+	&SYSTEM echo      0.7850746E+07    -0.3613834E+07 >> goodebound.generate
+	&SYSTEM echo      0.7819250E+07    -0.3669431E+07 >> goodebound.generate
+	&SYSTEM echo      0.7787327E+07    -0.3725028E+07 >> goodebound.generate
+	&SYSTEM echo      0.7754981E+07    -0.3780626E+07 >> goodebound.generate
+	&SYSTEM echo      0.7722214E+07    -0.3836223E+07 >> goodebound.generate
+	&SYSTEM echo      0.7689028E+07    -0.3891821E+07 >> goodebound.generate
+	&SYSTEM echo      0.7655426E+07    -0.3947418E+07 >> goodebound.generate
+	&SYSTEM echo      0.7621410E+07    -0.4003016E+07 >> goodebound.generate
+	&SYSTEM echo      0.7586983E+07    -0.4058613E+07 >> goodebound.generate
+	&SYSTEM echo      0.7552148E+07    -0.4114210E+07 >> goodebound.generate
+	&SYSTEM echo      0.7516907E+07    -0.4169808E+07 >> goodebound.generate
+	&SYSTEM echo      0.7481263E+07    -0.4225405E+07 >> goodebound.generate
+	&SYSTEM echo      0.7445219E+07    -0.4281003E+07 >> goodebound.generate
+	&SYSTEM echo      0.7408777E+07    -0.4336600E+07 >> goodebound.generate
+	&SYSTEM echo      0.7371940E+07    -0.4392198E+07 >> goodebound.generate
+	&SYSTEM echo      0.7334711E+07    -0.4447795E+07 >> goodebound.generate
+	&SYSTEM echo      0.7297092E+07    -0.4503393E+07 >> goodebound.generate
+	&SYSTEM echo      0.7279156E+07    -0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo      0.7255210E+07    -0.4585221E+07 >> goodebound.generate
+	&SYSTEM echo      0.7230948E+07    -0.4640582E+07 >> goodebound.generate
+	&SYSTEM echo      0.7206367E+07    -0.4695781E+07 >> goodebound.generate
+	&SYSTEM echo      0.7181465E+07    -0.4750818E+07 >> goodebound.generate
+	&SYSTEM echo      0.7156241E+07    -0.4805689E+07 >> goodebound.generate
+	&SYSTEM echo      0.7130693E+07    -0.4860393E+07 >> goodebound.generate
+	&SYSTEM echo      0.7104820E+07    -0.4914927E+07 >> goodebound.generate
+	&SYSTEM echo      0.7078621E+07    -0.4969288E+07 >> goodebound.generate
+	&SYSTEM echo      0.7052094E+07    -0.5023475E+07 >> goodebound.generate
+	&SYSTEM echo      0.7025237E+07    -0.5077485E+07 >> goodebound.generate
+	&SYSTEM echo      0.6998049E+07    -0.5131316E+07 >> goodebound.generate
+	&SYSTEM echo      0.6970528E+07    -0.5184964E+07 >> goodebound.generate
+	&SYSTEM echo      0.6942672E+07    -0.5238429E+07 >> goodebound.generate
+	&SYSTEM echo      0.6914479E+07    -0.5291706E+07 >> goodebound.generate
+	&SYSTEM echo      0.6885948E+07    -0.5344795E+07 >> goodebound.generate
+	&SYSTEM echo      0.6857077E+07    -0.5397691E+07 >> goodebound.generate
+	&SYSTEM echo      0.6827862E+07    -0.5450394E+07 >> goodebound.generate
+	&SYSTEM echo      0.6798303E+07    -0.5502899E+07 >> goodebound.generate
+	&SYSTEM echo      0.6768397E+07    -0.5555205E+07 >> goodebound.generate
+	&SYSTEM echo      0.6738142E+07    -0.5607308E+07 >> goodebound.generate
+	&SYSTEM echo      0.6707536E+07    -0.5659207E+07 >> goodebound.generate
+	&SYSTEM echo      0.6676575E+07    -0.5710898E+07 >> goodebound.generate
+	&SYSTEM echo      0.6645259E+07    -0.5762379E+07 >> goodebound.generate
+	&SYSTEM echo      0.6613583E+07    -0.5813646E+07 >> goodebound.generate
+	&SYSTEM echo      0.6581546E+07    -0.5864697E+07 >> goodebound.generate
+	&SYSTEM echo      0.6549144E+07    -0.5915529E+07 >> goodebound.generate
+	&SYSTEM echo      0.6516352E+07    -0.5966175E+07 >> goodebound.generate
+	&SYSTEM echo      0.6483209E+07    -0.6016566E+07 >> goodebound.generate
+	&SYSTEM echo      0.6449691E+07    -0.6066730E+07 >> goodebound.generate
+	&SYSTEM echo      0.6415796E+07    -0.6116664E+07 >> goodebound.generate
+	&SYSTEM echo      0.6381520E+07    -0.6166365E+07 >> goodebound.generate
+	&SYSTEM echo      0.6346860E+07    -0.6215830E+07 >> goodebound.generate
+	&SYSTEM echo      0.6311812E+07    -0.6265056E+07 >> goodebound.generate
+	&SYSTEM echo      0.6276372E+07    -0.6314039E+07 >> goodebound.generate
+	&SYSTEM echo      0.6240536E+07    -0.6362776E+07 >> goodebound.generate
+	&SYSTEM echo      0.6204299E+07    -0.6411264E+07 >> goodebound.generate
+	&SYSTEM echo      0.6167658E+07    -0.6459500E+07 >> goodebound.generate
+	&SYSTEM echo      0.6130608E+07    -0.6507479E+07 >> goodebound.generate
+	&SYSTEM echo      0.6093144E+07    -0.6555200E+07 >> goodebound.generate
+	&SYSTEM echo      0.6055262E+07    -0.6602658E+07 >> goodebound.generate
+	&SYSTEM echo      0.6016955E+07    -0.6649849E+07 >> goodebound.generate
+	&SYSTEM echo      0.5978218E+07    -0.6696770E+07 >> goodebound.generate
+	&SYSTEM echo      0.5939047E+07    -0.6743417E+07 >> goodebound.generate
+	&SYSTEM echo      0.5899434E+07    -0.6789786E+07 >> goodebound.generate
+	&SYSTEM echo      0.5859374E+07    -0.6835873E+07 >> goodebound.generate
+	&SYSTEM echo      0.5818860E+07    -0.6881674E+07 >> goodebound.generate
+	&SYSTEM echo      0.5777886E+07    -0.6927186E+07 >> goodebound.generate
+	&SYSTEM echo      0.5736444E+07    -0.6972403E+07 >> goodebound.generate
+	&SYSTEM echo      0.5694526E+07    -0.7017321E+07 >> goodebound.generate
+	&SYSTEM echo      0.5652125E+07    -0.7061936E+07 >> goodebound.generate
+	&SYSTEM echo      0.5609232E+07    -0.7106244E+07 >> goodebound.generate
+	&SYSTEM echo      0.5565839E+07    -0.7150239E+07 >> goodebound.generate
+	&SYSTEM echo      0.5521936E+07    -0.7193916E+07 >> goodebound.generate
+	&SYSTEM echo      0.5477514E+07    -0.7237271E+07 >> goodebound.generate
+	&SYSTEM echo      0.5432563E+07    -0.7280299E+07 >> goodebound.generate
+	&SYSTEM echo      0.5387070E+07    -0.7322993E+07 >> goodebound.generate
+	&SYSTEM echo      0.5341026E+07    -0.7365349E+07 >> goodebound.generate
+	&SYSTEM echo      0.5294418E+07    -0.7407361E+07 >> goodebound.generate
+	&SYSTEM echo      0.5247232E+07    -0.7449022E+07 >> goodebound.generate
+	&SYSTEM echo      0.5199457E+07    -0.7490327E+07 >> goodebound.generate
+	&SYSTEM echo      0.5151076E+07    -0.7531268E+07 >> goodebound.generate
+	&SYSTEM echo      0.5102075E+07    -0.7571840E+07 >> goodebound.generate
+	&SYSTEM echo      0.5052437E+07    -0.7612034E+07 >> goodebound.generate
+	&SYSTEM echo      0.5002115E+07    -0.7651868E+07 >> goodebound.generate
+	&SYSTEM echo      0.4951140E+07    -0.7691294E+07 >> goodebound.generate
+	&SYSTEM echo      0.4899470E+07    -0.7730321E+07 >> goodebound.generate
+	&SYSTEM echo      0.4847082E+07    -0.7768942E+07 >> goodebound.generate
+	&SYSTEM echo      0.4793954E+07    -0.7807147E+07 >> goodebound.generate
+	&SYSTEM echo      0.4740058E+07    -0.7844929E+07 >> goodebound.generate
+	&SYSTEM echo      0.4685368E+07    -0.7882277E+07 >> goodebound.generate
+	&SYSTEM echo      0.4629854E+07    -0.7919181E+07 >> goodebound.generate
+	&SYSTEM echo      0.4573483E+07    -0.7955632E+07 >> goodebound.generate
+	&SYSTEM echo      0.4516219E+07    -0.7991617E+07 >> goodebound.generate
+	&SYSTEM echo      0.4458025E+07    -0.8027125E+07 >> goodebound.generate
+	&SYSTEM echo      0.4398856E+07    -0.8062143E+07 >> goodebound.generate
+	&SYSTEM echo      0.4338666E+07    -0.8096658E+07 >> goodebound.generate
+	&SYSTEM echo      0.4277404E+07    -0.8130656E+07 >> goodebound.generate
+	&SYSTEM echo      0.4215011E+07    -0.8164119E+07 >> goodebound.generate
+	&SYSTEM echo      0.4151424E+07    -0.8197032E+07 >> goodebound.generate
+	&SYSTEM echo      0.4086572E+07    -0.8229376E+07 >> goodebound.generate
+	&SYSTEM echo      0.4020375E+07    -0.8261130E+07 >> goodebound.generate
+	&SYSTEM echo      0.3952703E+07    -0.8292290E+07 >> goodebound.generate
+	&SYSTEM echo      0.3883504E+07    -0.8322807E+07 >> goodebound.generate
+	&SYSTEM echo      0.3812634E+07    -0.8352664E+07 >> goodebound.generate
+	&SYSTEM echo      0.3739950E+07    -0.8381833E+07 >> goodebound.generate
+	&SYSTEM echo      0.3665284E+07    -0.8410281E+07 >> goodebound.generate
+	&SYSTEM echo      0.3588437E+07    -0.8437971E+07 >> goodebound.generate
+	&SYSTEM echo      0.3509168E+07    -0.8464861E+07 >> goodebound.generate
+	&SYSTEM echo      0.3427187E+07    -0.8490900E+07 >> goodebound.generate
+	&SYSTEM echo      0.3342101E+07    -0.8516038E+07 >> goodebound.generate
+	&SYSTEM echo      0.3253461E+07    -0.8540199E+07 >> goodebound.generate
+	&SYSTEM echo      0.3160633E+07    -0.8563302E+07 >> goodebound.generate
+	&SYSTEM echo      0.3062760E+07    -0.8585243E+07 >> goodebound.generate
+	&SYSTEM echo      0.2958619E+07    -0.8605883E+07 >> goodebound.generate
+	&SYSTEM echo      0.2846240E+07    -0.8625049E+07 >> goodebound.generate
+	&SYSTEM echo      0.2722403E+07    -0.8642457E+07 >> goodebound.generate
+	&SYSTEM echo      0.2580311E+07    -0.8657664E+07 >> goodebound.generate
+	&SYSTEM echo      0.2399274E+07    -0.8669698E+07 >> goodebound.generate
+	&SYSTEM echo      0.2223787E+07    -0.8673540E+07 >> goodebound.generate
+	&SYSTEM echo      0.2106980E+07    -0.8669698E+07 >> goodebound.generate
+	&SYSTEM echo      0.1986289E+07    -0.8657664E+07 >> goodebound.generate
+	&SYSTEM echo      0.1891560E+07    -0.8642457E+07 >> goodebound.generate
+	&SYSTEM echo      0.1809003E+07    -0.8625049E+07 >> goodebound.generate
+	&SYSTEM echo      0.1734083E+07    -0.8605883E+07 >> goodebound.generate
+	&SYSTEM echo      0.1664656E+07    -0.8585243E+07 >> goodebound.generate
+	&SYSTEM echo      0.1599407E+07    -0.8563302E+07 >> goodebound.generate
+	&SYSTEM echo      0.1537522E+07    -0.8540199E+07 >> goodebound.generate
+	&SYSTEM echo      0.1478429E+07    -0.8516038E+07 >> goodebound.generate
+	&SYSTEM echo      0.1421705E+07    -0.8490900E+07 >> goodebound.generate
+	&SYSTEM echo      0.1367050E+07    -0.8464861E+07 >> goodebound.generate
+	&SYSTEM echo      0.1314205E+07    -0.8437971E+07 >> goodebound.generate
+	&SYSTEM echo      0.1262973E+07    -0.8410281E+07 >> goodebound.generate
+	&SYSTEM echo      0.1213196E+07    -0.8381833E+07 >> goodebound.generate
+	&SYSTEM echo      0.1164740E+07    -0.8352664E+07 >> goodebound.generate
+	&SYSTEM echo      0.1117493E+07    -0.8322807E+07 >> goodebound.generate
+	&SYSTEM echo      0.1071361E+07    -0.8292290E+07 >> goodebound.generate
+	&SYSTEM echo      0.1026246E+07    -0.8261130E+07 >> goodebound.generate
+	&SYSTEM echo      0.9821146E+06    -0.8229376E+07 >> goodebound.generate
+	&SYSTEM echo      0.9388799E+06    -0.8197032E+07 >> goodebound.generate
+	&SYSTEM echo      0.8964887E+06    -0.8164119E+07 >> goodebound.generate
+	&SYSTEM echo      0.8548936E+06    -0.8130656E+07 >> goodebound.generate
+	&SYSTEM echo      0.8140519E+06    -0.8096658E+07 >> goodebound.generate
+	&SYSTEM echo      0.7739254E+06    -0.8062143E+07 >> goodebound.generate
+	&SYSTEM echo      0.7344796E+06    -0.8027125E+07 >> goodebound.generate
+	&SYSTEM echo      0.6956831E+06    -0.7991617E+07 >> goodebound.generate
+	&SYSTEM echo      0.6575074E+06    -0.7955632E+07 >> goodebound.generate
+	&SYSTEM echo      0.6199266E+06    -0.7919181E+07 >> goodebound.generate
+	&SYSTEM echo      0.5829172E+06    -0.7882277E+07 >> goodebound.generate
+	&SYSTEM echo      0.5464573E+06    -0.7844929E+07 >> goodebound.generate
+	&SYSTEM echo      0.5105269E+06    -0.7807147E+07 >> goodebound.generate
+	&SYSTEM echo      0.4751078E+06    -0.7768942E+07 >> goodebound.generate
+	&SYSTEM echo      0.4401826E+06    -0.7730321E+07 >> goodebound.generate
+	&SYSTEM echo      0.4057358E+06    -0.7691294E+07 >> goodebound.generate
+	&SYSTEM echo      0.3717527E+06    -0.7651868E+07 >> goodebound.generate
+	&SYSTEM echo      0.3382044E+06    -0.7612034E+07 >> goodebound.generate
+	&SYSTEM echo      0.3051128E+06    -0.7571840E+07 >> goodebound.generate
+	&SYSTEM echo      0.2724454E+06    -0.7531268E+07 >> goodebound.generate
+	&SYSTEM echo      0.2401915E+06    -0.7490327E+07 >> goodebound.generate
+	&SYSTEM echo      0.2083410E+06    -0.7449022E+07 >> goodebound.generate
+	&SYSTEM echo      0.1768842E+06    -0.7407361E+07 >> goodebound.generate
+	&SYSTEM echo      0.1458119E+06    -0.7365349E+07 >> goodebound.generate
+	&SYSTEM echo      0.1151158E+06    -0.7322993E+07 >> goodebound.generate
+	&SYSTEM echo      0.8478763E+05    -0.7280299E+07 >> goodebound.generate
+	&SYSTEM echo      0.5481979E+05    -0.7237271E+07 >> goodebound.generate
+	&SYSTEM echo      0.2520505E+05    -0.7193916E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4063433E+04    -0.7150239E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3299216E+05    -0.7106244E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6158728E+05    -0.7061936E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8985464E+05    -0.7017321E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1177998E+06    -0.6972403E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1454280E+06    -0.6927186E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1727444E+06    -0.6881674E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1997535E+06    -0.6835873E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2264602E+06    -0.6789786E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2528686E+06    -0.6743417E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2789829E+06    -0.6696770E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3048072E+06    -0.6649849E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3303451E+06    -0.6602658E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3556003E+06    -0.6555200E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3805763E+06    -0.6507479E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4052763E+06    -0.6459500E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4297036E+06    -0.6411264E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4538612E+06    -0.6362776E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4777520E+06    -0.6314039E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5013788E+06    -0.6265056E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5247443E+06    -0.6215830E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5478510E+06    -0.6166365E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5707015E+06    -0.6116664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5932981E+06    -0.6066730E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6156432E+06    -0.6016566E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6377389E+06    -0.5966175E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6596001E+06    -0.5915529E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6812013E+06    -0.5864697E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7025594E+06    -0.5813646E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7236765E+06    -0.5762379E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7445543E+06    -0.5710898E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7651946E+06    -0.5659207E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7855989E+06    -0.5607308E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8057689E+06    -0.5555205E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8257062E+06    -0.5502899E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8454122E+06    -0.5450394E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8648884E+06    -0.5397691E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8841362E+06    -0.5344795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9031570E+06    -0.5291706E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9219521E+06    -0.5238429E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9405227E+06    -0.5184964E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9588701E+06    -0.5131316E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9769955E+06    -0.5077485E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9949000E+06    -0.5023475E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1012585E+07    -0.4969288E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1030051E+07    -0.4914927E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1047299E+07    -0.4860393E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1064331E+07    -0.4805689E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1081147E+07    -0.4750818E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1097749E+07    -0.4695781E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1114136E+07    -0.4640582E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1130311E+07    -0.4585221E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1146275E+07    -0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1158232E+07    -0.4503393E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1183311E+07    -0.4447795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1208131E+07    -0.4392198E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1232688E+07    -0.4336600E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1256983E+07    -0.4281003E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1281013E+07    -0.4225405E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1304776E+07    -0.4169808E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1328270E+07    -0.4114210E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1351493E+07    -0.4058613E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1374444E+07    -0.4003016E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1397121E+07    -0.3947418E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1419523E+07    -0.3891821E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1441647E+07    -0.3836223E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1463492E+07    -0.3780626E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1485056E+07    -0.3725028E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1506337E+07    -0.3669431E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1527335E+07    -0.3613834E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1548047E+07    -0.3558236E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1568471E+07    -0.3502639E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1588607E+07    -0.3447041E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1608452E+07    -0.3391444E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1628006E+07    -0.3335846E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1647266E+07    -0.3280249E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1666232E+07    -0.3224651E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1684901E+07    -0.3169054E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1703272E+07    -0.3113457E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1721345E+07    -0.3057859E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1739117E+07    -0.3002262E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1756587E+07    -0.2946664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1773754E+07    -0.2891067E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1790617E+07    -0.2835469E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1807174E+07    -0.2779872E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1823424E+07    -0.2724275E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1839365E+07    -0.2668677E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1854998E+07    -0.2613080E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1870319E+07    -0.2557482E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1885329E+07    -0.2501885E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1900026E+07    -0.2446287E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1914409E+07    -0.2390690E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1928477E+07    -0.2335092E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1942228E+07    -0.2279495E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1955663E+07    -0.2223898E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1968779E+07    -0.2168300E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1981575E+07    -0.2112703E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1994052E+07    -0.2057105E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2006207E+07    -0.2001508E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2018040E+07    -0.1945910E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2029550E+07    -0.1890313E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2040736E+07    -0.1834715E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2051598E+07    -0.1779118E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2062133E+07    -0.1723521E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2072343E+07    -0.1667923E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2082225E+07    -0.1612326E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2091779E+07    -0.1556728E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2101005E+07    -0.1501131E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2109901E+07    -0.1445533E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2118467E+07    -0.1389936E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2126703E+07    -0.1334339E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2134607E+07    -0.1278741E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2142179E+07    -0.1223144E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2149419E+07    -0.1167546E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2156326E+07    -0.1111949E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2162899E+07    -0.1056351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2169138E+07    -0.1000754E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2175042E+07    -0.9451564E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2180612E+07    -0.8895590E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2185846E+07    -0.8339616E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2190744E+07    -0.7783641E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2195307E+07    -0.7227667E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2199532E+07    -0.6671693E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2203421E+07    -0.6115718E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2206972E+07    -0.5559744E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2210187E+07    -0.5003769E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2213063E+07    -0.4447795E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2215602E+07    -0.3891821E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2217802E+07    -0.3335846E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2219664E+07    -0.2779872E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2221188E+07    -0.2223898E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2225422E+07    -0.1667923E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2225422E+07    -0.1667923E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2226607E+07    -0.2223898E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2228131E+07    -0.2779872E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2229993E+07    -0.3335846E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2232194E+07    -0.3891821E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2234732E+07    -0.4447795E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2237609E+07    -0.5003769E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2240823E+07    -0.5559744E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2244374E+07    -0.6115718E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2248263E+07    -0.6671693E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2252489E+07    -0.7227667E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2257051E+07    -0.7783641E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2261949E+07    -0.8339616E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2267183E+07    -0.8895590E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2272753E+07    -0.9451564E+06 >> goodebound.generate
+	&SYSTEM echo     -0.2278657E+07    -0.1000754E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2284896E+07    -0.1056351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2291470E+07    -0.1111949E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2298376E+07    -0.1167546E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2305616E+07    -0.1223144E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2313188E+07    -0.1278741E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2321093E+07    -0.1334339E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2329328E+07    -0.1389936E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2337894E+07    -0.1445533E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2346791E+07    -0.1501131E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2356016E+07    -0.1556728E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2365570E+07    -0.1612326E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2375453E+07    -0.1667923E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2385662E+07    -0.1723521E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2396198E+07    -0.1779118E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2407059E+07    -0.1834715E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2418245E+07    -0.1890313E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2429755E+07    -0.1945910E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2441588E+07    -0.2001508E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2453743E+07    -0.2057105E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2466220E+07    -0.2112703E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2479016E+07    -0.2168300E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2492132E+07    -0.2223898E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2505567E+07    -0.2279495E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2519318E+07    -0.2335092E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2533386E+07    -0.2390690E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2547769E+07    -0.2446287E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2562466E+07    -0.2501885E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2577476E+07    -0.2557482E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2592797E+07    -0.2613080E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2608430E+07    -0.2668677E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2624371E+07    -0.2724275E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2640621E+07    -0.2779872E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2657178E+07    -0.2835469E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2674041E+07    -0.2891067E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2691208E+07    -0.2946664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2708678E+07    -0.3002262E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2726450E+07    -0.3057859E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2744523E+07    -0.3113457E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2762894E+07    -0.3169054E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2781563E+07    -0.3224651E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2800529E+07    -0.3280249E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2819789E+07    -0.3335846E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2839343E+07    -0.3391444E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2859188E+07    -0.3447041E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2879324E+07    -0.3502639E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2899749E+07    -0.3558236E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2920460E+07    -0.3613834E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2941458E+07    -0.3669431E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2962739E+07    -0.3725028E+07 >> goodebound.generate
+	&SYSTEM echo     -0.2984303E+07    -0.3780626E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3006148E+07    -0.3836223E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3028272E+07    -0.3891821E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3050674E+07    -0.3947418E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3073351E+07    -0.4003016E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3096302E+07    -0.4058613E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3119526E+07    -0.4114210E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3143020E+07    -0.4169808E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3166782E+07    -0.4225405E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3190812E+07    -0.4281003E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3215107E+07    -0.4336600E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3239665E+07    -0.4392198E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3264484E+07    -0.4447795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3289563E+07    -0.4503393E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3301520E+07    -0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3317484E+07    -0.4585221E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3333659E+07    -0.4640582E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3350046E+07    -0.4695781E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3366648E+07    -0.4750818E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3383464E+07    -0.4805689E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3400496E+07    -0.4860393E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3417744E+07    -0.4914927E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3435210E+07    -0.4969288E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3452895E+07    -0.5023475E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3470800E+07    -0.5077485E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3488925E+07    -0.5131316E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3507272E+07    -0.5184964E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3525843E+07    -0.5238429E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3544638E+07    -0.5291706E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3563659E+07    -0.5344795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3582907E+07    -0.5397691E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3602383E+07    -0.5450394E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3622089E+07    -0.5502899E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3642026E+07    -0.5555205E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3662196E+07    -0.5607308E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3682601E+07    -0.5659207E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3703241E+07    -0.5710898E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3724119E+07    -0.5762379E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3745236E+07    -0.5813646E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3766594E+07    -0.5864697E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3788195E+07    -0.5915529E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3810056E+07    -0.5966175E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3832152E+07    -0.6016566E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3854497E+07    -0.6066730E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3877094E+07    -0.6116664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3899944E+07    -0.6166365E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3923051E+07    -0.6215830E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3946416E+07    -0.6265056E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3970043E+07    -0.6314039E+07 >> goodebound.generate
+	&SYSTEM echo     -0.3993934E+07    -0.6362776E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4018091E+07    -0.6411264E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4042519E+07    -0.6459500E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4067219E+07    -0.6507479E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4092195E+07    -0.6555200E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4117450E+07    -0.6602658E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4142988E+07    -0.6649849E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4168812E+07    -0.6696770E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4194927E+07    -0.6743417E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4221335E+07    -0.6789786E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4248042E+07    -0.6835873E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4275051E+07    -0.6881674E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4302367E+07    -0.6927186E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4329995E+07    -0.6972403E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4357941E+07    -0.7017321E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4386208E+07    -0.7061936E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4414803E+07    -0.7106244E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4443732E+07    -0.7150239E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4473000E+07    -0.7193916E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4502615E+07    -0.7237271E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4532583E+07    -0.7280299E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4562911E+07    -0.7322993E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4593607E+07    -0.7365349E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4624679E+07    -0.7407361E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4656136E+07    -0.7449022E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4687987E+07    -0.7490327E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4720241E+07    -0.7531268E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4752908E+07    -0.7571840E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4786000E+07    -0.7612034E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4819548E+07    -0.7651868E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4853531E+07    -0.7691294E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4887978E+07    -0.7730321E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4922903E+07    -0.7768942E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4958322E+07    -0.7807147E+07 >> goodebound.generate
+	&SYSTEM echo     -0.4994253E+07    -0.7844929E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5030712E+07    -0.7882277E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5067722E+07    -0.7919181E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5105303E+07    -0.7955632E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5143478E+07    -0.7991617E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5182275E+07    -0.8027125E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5221721E+07    -0.8062143E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5261847E+07    -0.8096658E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5302689E+07    -0.8130656E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5344284E+07    -0.8164119E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5386675E+07    -0.8197032E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5429910E+07    -0.8229376E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5474041E+07    -0.8261130E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5519156E+07    -0.8292290E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5565288E+07    -0.8322807E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5612535E+07    -0.8352664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5660991E+07    -0.8381833E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5710769E+07    -0.8410281E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5762000E+07    -0.8437971E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5814845E+07    -0.8464861E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5869500E+07    -0.8490900E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5926224E+07    -0.8516038E+07 >> goodebound.generate
+	&SYSTEM echo     -0.5985317E+07    -0.8540199E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6047202E+07    -0.8563302E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6112451E+07    -0.8585243E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6181878E+07    -0.8605883E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6256798E+07    -0.8625049E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6339356E+07    -0.8642457E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6434084E+07    -0.8657664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6554775E+07    -0.8669698E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6671804E+07    -0.8673540E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6788610E+07    -0.8669698E+07 >> goodebound.generate
+	&SYSTEM echo     -0.6909302E+07    -0.8657664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7004030E+07    -0.8642457E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7086587E+07    -0.8625049E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7161507E+07    -0.8605883E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7230934E+07    -0.8585243E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7296183E+07    -0.8563302E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7358068E+07    -0.8540199E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7417161E+07    -0.8516038E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7473885E+07    -0.8490900E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7528540E+07    -0.8464861E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7581385E+07    -0.8437971E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7632617E+07    -0.8410281E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7682394E+07    -0.8381833E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7730850E+07    -0.8352664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7778097E+07    -0.8322807E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7824229E+07    -0.8292290E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7869344E+07    -0.8261130E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7913476E+07    -0.8229376E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7956710E+07    -0.8197032E+07 >> goodebound.generate
+	&SYSTEM echo     -0.7999102E+07    -0.8164119E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8040697E+07    -0.8130656E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8081538E+07    -0.8096658E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8121665E+07    -0.8062143E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8161111E+07    -0.8027125E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8199907E+07    -0.7991617E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8238083E+07    -0.7955632E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8275664E+07    -0.7919181E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8312673E+07    -0.7882277E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8349133E+07    -0.7844929E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8385063E+07    -0.7807147E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8420482E+07    -0.7768942E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8455407E+07    -0.7730321E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8489854E+07    -0.7691294E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8523837E+07    -0.7651868E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8557386E+07    -0.7612034E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8590477E+07    -0.7571840E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8623145E+07    -0.7531268E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8655398E+07    -0.7490327E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8687249E+07    -0.7449022E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8718706E+07    -0.7407361E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8749778E+07    -0.7365349E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8780474E+07    -0.7322993E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8810802E+07    -0.7280299E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8840770E+07    -0.7237271E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8870385E+07    -0.7193916E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8899653E+07    -0.7150239E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8928582E+07    -0.7106244E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8957177E+07    -0.7061936E+07 >> goodebound.generate
+	&SYSTEM echo     -0.8985445E+07    -0.7017321E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9013390E+07    -0.6972403E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9041018E+07    -0.6927186E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9068334E+07    -0.6881674E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9095343E+07    -0.6835873E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9122050E+07    -0.6789786E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9148459E+07    -0.6743417E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9174573E+07    -0.6696770E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9200397E+07    -0.6649849E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9225935E+07    -0.6602658E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9251190E+07    -0.6555200E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9276166E+07    -0.6507479E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9300866E+07    -0.6459500E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9325294E+07    -0.6411264E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9349451E+07    -0.6362776E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9373342E+07    -0.6314039E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9396969E+07    -0.6265056E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9420334E+07    -0.6215830E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9443441E+07    -0.6166365E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9466291E+07    -0.6116664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9488888E+07    -0.6066730E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9511233E+07    -0.6016566E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9533329E+07    -0.5966175E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9555190E+07    -0.5915529E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9576791E+07    -0.5864697E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9598149E+07    -0.5813646E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9619266E+07    -0.5762379E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9640144E+07    -0.5710898E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9660785E+07    -0.5659207E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9681189E+07    -0.5607308E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9701359E+07    -0.5555205E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9721296E+07    -0.5502899E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9741002E+07    -0.5450394E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9760478E+07    -0.5397691E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9779726E+07    -0.5344795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9798747E+07    -0.5291706E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9817542E+07    -0.5238429E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9836113E+07    -0.5184964E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9854460E+07    -0.5131316E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9872585E+07    -0.5077485E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9890490E+07    -0.5023475E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9908175E+07    -0.4969288E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9925641E+07    -0.4914927E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9942889E+07    -0.4860393E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9959921E+07    -0.4805689E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9976737E+07    -0.4750818E+07 >> goodebound.generate
+	&SYSTEM echo     -0.9993339E+07    -0.4695781E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1000973E+08    -0.4640582E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1002590E+08    -0.4585221E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1004187E+08    -0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1005382E+08    -0.4503393E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1007890E+08    -0.4447795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1010372E+08    -0.4392198E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1012828E+08    -0.4336600E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1015257E+08    -0.4281003E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1017660E+08    -0.4225405E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1020037E+08    -0.4169808E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1022386E+08    -0.4114210E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1024708E+08    -0.4058613E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1027003E+08    -0.4003016E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1029271E+08    -0.3947418E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1031511E+08    -0.3891821E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1033724E+08    -0.3836223E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1035908E+08    -0.3780626E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1038065E+08    -0.3725028E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1040193E+08    -0.3669431E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1042293E+08    -0.3613834E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1044364E+08    -0.3558236E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1046406E+08    -0.3502639E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1048420E+08    -0.3447041E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1050404E+08    -0.3391444E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1052360E+08    -0.3335846E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1054286E+08    -0.3280249E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1056182E+08    -0.3224651E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1058049E+08    -0.3169054E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1059886E+08    -0.3113457E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1061694E+08    -0.3057859E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1063471E+08    -0.3002262E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1065218E+08    -0.2946664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1066934E+08    -0.2891067E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1068621E+08    -0.2835469E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1070276E+08    -0.2779872E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1071901E+08    -0.2724275E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1073496E+08    -0.2668677E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1075059E+08    -0.2613080E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1076591E+08    -0.2557482E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1078092E+08    -0.2501885E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1079562E+08    -0.2446287E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1081000E+08    -0.2390690E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1082407E+08    -0.2335092E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1083782E+08    -0.2279495E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1085125E+08    -0.2223898E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1086437E+08    -0.2168300E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1087717E+08    -0.2112703E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1088964E+08    -0.2057105E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1090180E+08    -0.2001508E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1091363E+08    -0.1945910E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1092514E+08    -0.1890313E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1093633E+08    -0.1834715E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1094719E+08    -0.1779118E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1095772E+08    -0.1723521E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1096793E+08    -0.1667923E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1097782E+08    -0.1612326E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1098737E+08    -0.1556728E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1099659E+08    -0.1501131E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1100549E+08    -0.1445533E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1101406E+08    -0.1389936E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1102229E+08    -0.1334339E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1103020E+08    -0.1278741E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1103777E+08    -0.1223144E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1104501E+08    -0.1167546E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1105192E+08    -0.1111949E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1105849E+08    -0.1056351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1106473E+08    -0.1000754E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1107063E+08    -0.9451564E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1107620E+08    -0.8895590E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1108144E+08    -0.8339616E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1108633E+08    -0.7783641E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1109090E+08    -0.7227667E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1109512E+08    -0.6671693E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1109901E+08    -0.6115718E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1110256E+08    -0.5559744E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1110578E+08    -0.5003769E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1110865E+08    -0.4447795E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1111119E+08    -0.3891821E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1111339E+08    -0.3335846E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1111525E+08    -0.2779872E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1111678E+08    -0.2223898E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1112177E+08    -0.1667923E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1112355E+08    -0.2223898E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1112584E+08    -0.2779872E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1112863E+08    -0.3335846E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1113193E+08    -0.3891821E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1113574E+08    -0.4447795E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1114005E+08    -0.5003769E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1114488E+08    -0.5559744E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1115020E+08    -0.6115718E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1115604E+08    -0.6671693E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1116237E+08    -0.7227667E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1116922E+08    -0.7783641E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1117657E+08    -0.8339616E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1118442E+08    -0.8895590E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1119277E+08    -0.9451564E+06 >> goodebound.generate
+	&SYSTEM echo     -0.1120163E+08    -0.1000754E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1121099E+08    -0.1056351E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1122085E+08    -0.1111949E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1123121E+08    -0.1167546E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1124207E+08    -0.1223144E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1125342E+08    -0.1278741E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1126528E+08    -0.1334339E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1127763E+08    -0.1389936E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1129048E+08    -0.1445533E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1130383E+08    -0.1501131E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1131767E+08    -0.1556728E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1133200E+08    -0.1612326E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1134682E+08    -0.1667923E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1136213E+08    -0.1723521E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1137794E+08    -0.1779118E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1139423E+08    -0.1834715E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1141101E+08    -0.1890313E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1142827E+08    -0.1945910E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1144602E+08    -0.2001508E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1146426E+08    -0.2057105E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1148297E+08    -0.2112703E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1150217E+08    -0.2168300E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1152184E+08    -0.2223898E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1154199E+08    -0.2279495E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1156262E+08    -0.2335092E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1158372E+08    -0.2390690E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1160529E+08    -0.2446287E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1162734E+08    -0.2501885E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1164986E+08    -0.2557482E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1167284E+08    -0.2613080E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1169629E+08    -0.2668677E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1172020E+08    -0.2724275E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1174457E+08    -0.2779872E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1176941E+08    -0.2835469E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1179470E+08    -0.2891067E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1182045E+08    -0.2946664E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1184666E+08    -0.3002262E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1187332E+08    -0.3057859E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1190043E+08    -0.3113457E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1192798E+08    -0.3169054E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1195599E+08    -0.3224651E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1198443E+08    -0.3280249E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1201333E+08    -0.3335846E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1204266E+08    -0.3391444E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1207242E+08    -0.3447041E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1210263E+08    -0.3502639E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1213326E+08    -0.3558236E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1216433E+08    -0.3613834E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1219583E+08    -0.3669431E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1222775E+08    -0.3725028E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1226010E+08    -0.3780626E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1229286E+08    -0.3836223E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1232605E+08    -0.3891821E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1235965E+08    -0.3947418E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1239367E+08    -0.4003016E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1242809E+08    -0.4058613E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1246293E+08    -0.4114210E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1249817E+08    -0.4169808E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1253381E+08    -0.4225405E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1256986E+08    -0.4281003E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1260630E+08    -0.4336600E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1264314E+08    -0.4392198E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1268037E+08    -0.4447795E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1271799E+08    -0.4503393E+07 >> goodebound.generate
+	&SYSTEM echo     -0.1273592E+08    -0.4529703E+07 >> goodebound.generate
+	&SYSTEM echo END >> goodebound.generate
+	&SYSTEM echo END >> goodebound.generate
+	/* }}} 
+	/* {{{ ACTUAL GENERATION
+		GENERATE bound1
+			INPUT goodebound.generate
+			POLYGONS
+		QUIT
+		BUILD bound1 poly
+	/* }}} 
+/* }}} 
+
+/* {{{ PROJECTION FILES
+	&SYSTEM echo input > 1.projection
+	&SYSTEM echo projection GEOGRAPHIC >> 1.projection
+	&SYSTEM echo units DD >> 1.projection
+	&SYSTEM echo parameters >> 1.projection
+	&SYSTEM echo output >> 1.projection
+	&SYSTEM echo projection MOLLWEIDE >> 1.projection
+	&SYSTEM echo units METERS >> 1.projection
+	&SYSTEM echo spheroid SPHERE >> 1.projection
+	&SYSTEM echo xshift -11119487.42847 >> 1.projection
+	&SYSTEM echo yshift   -336410.83237 >> 1.projection
+	&SYSTEM echo parameters >> 1.projection
+	&SYSTEM echo -100 00 00 >> 1.projection
+	&SYSTEM echo end >> 1.projection
+	&SYSTEM echo input > 2.projection
+	&SYSTEM echo projection GEOGRAPHIC >> 2.projection
+	&SYSTEM echo units DD >> 2.projection
+	&SYSTEM echo parameters >> 2.projection
+	&SYSTEM echo output >> 2.projection
+	&SYSTEM echo projection MOLLWEIDE >> 2.projection
+	&SYSTEM echo units METERS >> 2.projection
+	&SYSTEM echo spheroid SPHERE >> 2.projection
+	&SYSTEM echo xshift 3335846.22854 >> 2.projection
+	&SYSTEM echo yshift -336410.83237 >> 2.projection
+	&SYSTEM echo parameters >> 2.projection
+	&SYSTEM echo 30 00 00 >> 2.projection
+	&SYSTEM echo end >> 2.projection
+	&SYSTEM echo input > 3.projection
+	&SYSTEM echo projection GEOGRAPHIC >> 3.projection
+	&SYSTEM echo units DD >> 3.projection
+	&SYSTEM echo parameters >> 3.projection
+	&SYSTEM echo output >> 3.projection
+	&SYSTEM echo projection SINUSOIDAL >> 3.projection
+	&SYSTEM echo units METERS >> 3.projection
+	&SYSTEM echo parameters >> 3.projection
+	&SYSTEM echo 6370997.0 >> 3.projection
+	&SYSTEM echo -100 00 00 >> 3.projection
+	&SYSTEM echo -11119487.42847 >> 3.projection
+	&SYSTEM echo         0.0 >> 3.projection
+	&SYSTEM echo end >> 3.projection
+	&SYSTEM echo input > 4.projection
+	&SYSTEM echo projection GEOGRAPHIC >> 4.projection
+	&SYSTEM echo units DD >> 4.projection
+	&SYSTEM echo parameters >> 4.projection
+	&SYSTEM echo output >> 4.projection
+	&SYSTEM echo projection SINUSOIDAL >> 4.projection
+	&SYSTEM echo units METERS >> 4.projection
+	&SYSTEM echo parameters >> 4.projection
+	&SYSTEM echo 6370997.0 >> 4.projection
+	&SYSTEM echo 30 00 00 >> 4.projection
+	&SYSTEM echo 3335846.22854 >> 4.projection
+	&SYSTEM echo       0.0 >> 4.projection
+	&SYSTEM echo end >> 4.projection
+	&SYSTEM echo input > 5.projection
+	&SYSTEM echo projection GEOGRAPHIC >> 5.projection
+	&SYSTEM echo units DD >> 5.projection
+	&SYSTEM echo parameters >> 5.projection
+	&SYSTEM echo output >> 5.projection
+	&SYSTEM echo projection SINUSOIDAL >> 5.projection
+	&SYSTEM echo units METERS >> 5.projection
+	&SYSTEM echo parameters >> 5.projection
+	&SYSTEM echo 6370997.0 >> 5.projection
+	&SYSTEM echo -160 00 00 >> 5.projection
+	&SYSTEM echo -17791179.88555 >> 5.projection
+	&SYSTEM echo         0.0 >> 5.projection
+	&SYSTEM echo end >> 5.projection
+	&SYSTEM echo input > 6.projection
+	&SYSTEM echo projection GEOGRAPHIC >> 6.projection
+	&SYSTEM echo units DD >> 6.projection
+	&SYSTEM echo parameters >> 6.projection
+	&SYSTEM echo output >> 6.projection
+	&SYSTEM echo projection SINUSOIDAL >> 6.projection
+	&SYSTEM echo units METERS >> 6.projection
+	&SYSTEM echo parameters >> 6.projection
+	&SYSTEM echo 6370997.0 >> 6.projection
+	&SYSTEM echo -60 00 00 >> 6.projection
+	&SYSTEM echo -6671692.45708 >> 6.projection
+	&SYSTEM echo        0.0 >> 6.projection
+	&SYSTEM echo end >> 6.projection
+	&SYSTEM echo input > 7.projection
+	&SYSTEM echo projection GEOGRAPHIC >> 7.projection
+	&SYSTEM echo units DD >> 7.projection
+	&SYSTEM echo parameters >> 7.projection
+	&SYSTEM echo output >> 7.projection
+	&SYSTEM echo projection SINUSOIDAL >> 7.projection
+	&SYSTEM echo units METERS >> 7.projection
+	&SYSTEM echo parameters >> 7.projection
+	&SYSTEM echo 6370997.0 >> 7.projection
+	&SYSTEM echo 20 00 00 >> 7.projection
+	&SYSTEM echo 2223897.48569 >> 7.projection
+	&SYSTEM echo       0.0 >> 7.projection
+	&SYSTEM echo end >> 7.projection
+	&SYSTEM echo input > 8.projection
+	&SYSTEM echo projection GEOGRAPHIC >> 8.projection
+	&SYSTEM echo units DD >> 8.projection
+	&SYSTEM echo parameters >> 8.projection
+	&SYSTEM echo output >> 8.projection
+	&SYSTEM echo projection SINUSOIDAL >> 8.projection
+	&SYSTEM echo units METERS >> 8.projection
+	&SYSTEM echo parameters >> 8.projection
+	&SYSTEM echo 6370997.0 >> 8.projection
+	&SYSTEM echo 140 00 00 >> 8.projection
+	&SYSTEM echo 15567282.39985 >> 8.projection
+	&SYSTEM echo        0.0 >> 8.projection
+	&SYSTEM echo end >> 8.projection
+	&SYSTEM echo input > 9.projection
+	&SYSTEM echo projection GEOGRAPHIC >> 9.projection
+	&SYSTEM echo units DD >> 9.projection
+	&SYSTEM echo parameters >> 9.projection
+	&SYSTEM echo output >> 9.projection
+	&SYSTEM echo projection MOLLWEIDE >> 9.projection
+	&SYSTEM echo units METERS >> 9.projection
+	&SYSTEM echo spheroid SPHERE >> 9.projection
+	&SYSTEM echo xshift -17791179.88555 >> 9.projection
+	&SYSTEM echo yshift    336410.83237 >> 9.projection
+	&SYSTEM echo parameters >> 9.projection
+	&SYSTEM echo -160 00 00 >> 9.projection
+	&SYSTEM echo end >> 9.projection
+	&SYSTEM echo  >> 9.projection
+	&SYSTEM echo input > 10.projection
+	&SYSTEM echo projection GEOGRAPHIC >> 10.projection
+	&SYSTEM echo units DD >> 10.projection
+	&SYSTEM echo parameters >> 10.projection
+	&SYSTEM echo output >> 10.projection
+	&SYSTEM echo projection MOLLWEIDE >> 10.projection
+	&SYSTEM echo units METERS >> 10.projection
+	&SYSTEM echo spheroid SPHERE >> 10.projection
+	&SYSTEM echo xshift -6671692.45708 >> 10.projection
+	&SYSTEM echo yshift   336410.83237 >> 10.projection
+	&SYSTEM echo parameters >> 10.projection
+	&SYSTEM echo -60 00 00 >> 10.projection
+	&SYSTEM echo end >> 10.projection
+	&SYSTEM echo  >> 10.projection
+	&SYSTEM echo input > 11.projection
+	&SYSTEM echo projection GEOGRAPHIC >> 11.projection
+	&SYSTEM echo units DD >> 11.projection
+	&SYSTEM echo parameters >> 11.projection
+	&SYSTEM echo output >> 11.projection
+	&SYSTEM echo projection MOLLWEIDE >> 11.projection
+	&SYSTEM echo units METERS >> 11.projection
+	&SYSTEM echo spheroid SPHERE >> 11.projection
+	&SYSTEM echo xshift 2223897.48569 >> 11.projection
+	&SYSTEM echo yshift  336410.83237 >> 11.projection
+	&SYSTEM echo parameters >> 11.projection
+	&SYSTEM echo 20 00 00 >> 11.projection
+	&SYSTEM echo end >> 11.projection
+	&SYSTEM echo  >> 11.projection
+	&SYSTEM echo input > 12.projection
+	&SYSTEM echo projection GEOGRAPHIC >> 12.projection
+	&SYSTEM echo units DD >> 12.projection
+	&SYSTEM echo parameters >> 12.projection
+	&SYSTEM echo output >> 12.projection
+	&SYSTEM echo projection MOLLWEIDE >> 12.projection
+	&SYSTEM echo units METERS >> 12.projection
+	&SYSTEM echo spheroid SPHERE >> 12.projection
+	&SYSTEM echo xshift 15567282.39985 >> 12.projection
+	&SYSTEM echo yshift   336410.83237 >> 12.projection
+	&SYSTEM echo parameters >> 12.projection
+	&SYSTEM echo 140 00 00 >> 12.projection
+	&SYSTEM echo end >> 12.projection
+	&SYSTEM echo  >> 12.projection
+/* }}} 
+
+/* {{{ CREATE CLIP COVERAGES
+	/* {{{ SEPARATE THE BITS
+	&DO intIndex = 1 &TO 14
+		&ECHO &OFF;ARCEDIT;&ECHO &ON
+			DISPLAY 0
+			EDIT region1
+			EDITFEATURE polygons
+			ASELECT ALL
+			NSELECT
+			ASEL region1-id = %intIndex%
+			PUT %intIndex%_1
+		QUIT
+		BUILD %intIndex%_1
+	&END
+	/* }}} 
+
+	/* {{{ MERGE FOR NORTH AMERICA AND EUROPE
+		/* {{{ NORTH AMERICA
+			UNION 1_1 2_1 1_2
+			UNION 1_2 3_1 region_1
+		/* }}} 
+		/* {{{ EUROPE
+			UNION 1_1 4_1 2_2
+			UNION 2_2 3_1 region_2
+		/* }}} 
+	/* }}} 
+
+	/* {{{ RENAME TO MATCH ESRI PAPER AND REVISION HISTORY
+		RENAME 14_1 region_12
+		RENAME 13_1 region_11
+		RENAME 12_1 region_10
+		RENAME 11_1 region_9
+		RENAME 10_1 region_8
+		RENAME 9_1 region_7
+		RENAME 8_1 region_6
+		RENAME 7_1 region_5
+		RENAME 6_1 region_4
+		RENAME 5_1 region_3
+	/* }}} 
+/* }}} 
+
+/* {{{ ADD DISSOLVE FIELD
+	&IF  "%strClass%" eq "COVER" &THEN &DO
+		&IF "%strType%" eq "POLY" &THEN &DO
+			&ECHO &OFF; TABLES; &ECHO &ON
+				SELECT data0.pat
+				ADDITEM data0.pat DISFIELD 6 6 i
+				CALC DISFIELD = data0#
+				COMMIT
+			QUIT
+		&END
+	&END
+/* }}} 
+&END /* END OF DEBUG MARK
+
+/* {{{ CLIP THE IN COVER
+	&IF "%strClass%" eq "COVER" &THEN &DO
+		&DO intIndex = 1 &TO 12
+			CLIP data0 region_%intIndex% data%intIndex%_1 %strType%
+		&END
+	&END
+	&ELSE &DO
+		&ECHO &OFF;GRID;&ECHO &ON
+			&DO intIndex = 1 &TO 12
+				SETWINDOW region_%intIndex%
+				SETCELL data0
+				region2_%intIndex% = POLYGRID (region_%intIndex%)
+				data%intIndex%_1 = CON (not isnull(region2_%intIndex%), data0, region2_%intIndex%)
+			&END
+		QUIT
+	&END
+/* }}} 
+
+/* {{{ PROJECT THE PIECES
+	&IF "%strClass%" eq "COVER" &THEN &DO
+		&DO intIndex = 1 &TO 12
+			&IF [EXIST data%intIndex%_2 -cover] &THEN KILL data%intIndex%_2 all
+			PROJECT cover data%intIndex%_1 data%intIndex%_2 %intIndex%.projection
+			CLEAN data%intIndex%_2 # # # %strType%
+		&END
+	&END
+	&ELSE &DO
+		&ECHO &OFF;GRID;&ECHO &ON
+			&DO intIndex = 1 &TO 12
+				 data%intIndex%_2 = PROJECT(data%intIndex%_1, %intIndex%.projection)
+			&END
+		QUIT
+	&END
+/* }}} 
+
+/* {{{ MERGE THE PIECES
+	&IF "%strClass%" eq "COVER" &THEN &DO
+		APPEND data3 %strType% ALL
+			data1_2
+			data10_2
+			data11_2
+			data12_2
+			data2_2
+			data3_2
+			data4_2
+			data5_2
+			data6_2
+			data7_2
+			data8_2
+			data9_2
+		END
+		CLEAN data3 # # # %strType%
+	&END
+	&ELSE &DO
+		&ECHO &OFF;GRID;&ECHO &ON
+			data3 = MOSAIC (data10_2,data11_2,data12_2,data1_2,data3_2,data4_2,data5_2,data6_2,data7_2,data8_2,data9_2)
+			data3a = CON (ISNULL(data3), data2_2, data3)
+			SETWINDOW data3a
+			SETCELL data3a
+			region3 = POLYGRID (bound1)
+			data4 = CON(ISNULL(region3), region3, data3a)
+		QUIT
+	&END
+/* }}} 
+
+/* {{{ DISSOLVE, IF POLY
+	&IF  "%strClass%" eq "COVER" &THEN &DO
+		&IF "%strType%" eq "POLY" &THEN &DO
+			DISSOLVE data3 data4 DISFIELD POLY
+			/* Join back data
+			JOINITEM data4.pat data0.pat data4.pat disfield
+		&END
+		&ELSE &DO
+			RENAME data3 data4
+		&END
+	&END
+/* }}} 
+
+/* {{{ FINISH - Voila!
+
+COPY data4 ..%dirchar%%dataOut%
+
+/* DONE!
+&CALL reset
+&SETVAR strMessageToSend = "Finished- %thisFile%"
+&CALL message
+
+/* cleanup (proper exit)
+&CALL niceclose
+/* }}} 
+
+&RETURN
+/* -------------------------------------
+/* SUBROUTINES BLOCK/*{{{*/
+
+/* {{{ USAGE
+&ROUTINE usage
+	&TYPE
+	&TYPE USAGE %thisFile% <COVER|GRID> in-dataset out-dataset {POLY | LINE | POINT | NET | LINK | RAW} {debugflag}
+	&TYPE     (Note that in-dataset *needs* to be in 'geographic' projection)
+	&STOP
+&RETURN
+/* }}} 
+
+/* {{{ RESET
+&ROUTINE reset
+	&ECHO &OFF
+	&PT &OFF
+	&IF not [NULL %bolDebug%] &THEN &STOP
+&RETURN
+/* }}} 
+
+/* {{{ MESSAGE
+/* Sends the text in the %strMessageToSend% string
+&ROUTINE message
+	&SETVAR strSystemInfo = [extract 5 [show &os]] [extract 2 [SHOW &PT ALL]]
+	&IF %hasWindows% eq .TRUE. &THEN &DO
+		&SYSTEM net send localhost --- %strMessageToSend% %strSystemInfo%
+	&END
+	&ELSE &DO
+	&END
+&RETURN
+/* }}} 
+
+/* FINISH IT OFF NICELY/*{{{*/
+&ROUTINE niceclose
+
+	/* Just a date stamp for the log-file
+	&SYSTEM %strDatecmd%
+
+	&ECHO &OFF
+	&MESSAGES &ON
+	&WATCH &OFF
+	&SEVERITY &ERROR &IGNORE
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	LAYER remove lyrRemoteIntPoly
+	LAYER remove lyrRemoteNatPoly
+	LAYER remove lyrLocalIntPoint
+	LAYER remove lyrLocalNatPoint
+	dataset disconnect connGRIDA
+	dataset disconnect connWCMC
+	w ..
+&return
+/*}}}*/
+
+/* In case of error, make sure that the env. is reset
+&ROUTINE bailout
+	&CALL reset
+
+	&SEVERITY &ERROR &IGNORE
+
+	&SETVAR strMessageToSend = "BAILOUT- %thisFile%"
+	&CALL message
+
+	&CALL niceclose
+	&TYPE
+	&TYPE
+	&TYPE
+&RETURN &ERROR BAILING OUT OF AML
+/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+
+

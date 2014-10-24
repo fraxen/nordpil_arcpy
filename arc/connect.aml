@@ -1,0 +1,61 @@
+/* listsde.aml
+/* Hugo Ahlenius
+/* last modified: 2002-Jan-10 13:15
+
+&ARGS inDatabase
+&s thisFile = connect
+/* STANDARD BLOCK/*{{{*/
+	&ECHO &ON
+	&severity &error &routine bailout
+	&WATCH %temp%/%thisFile%.log
+	dataset disconnect connUtnes
+	&amlpath %home%/aml
+/*/*}}}*/
+&IF [NULL %inDatabase%] &THEN &s inDatabase = sde_world_geo
+
+dataset connect connUtnes utnes.grida.no 5151 %inDatabase% CinderCone %inDatabase%
+
+
+
+
+
+/* cleanup (proper exit)
+&CALL niceclose
+&RETURN
+
+/* USAGE
+&LABEL USAGE
+	&CALL niceclose
+	&ty
+	&ty USAGE
+	&ty CONNECT {Database/User}
+&RETURN
+
+ /* SUBROUTINES BLOCK/*{{{*/
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&WATCH &OFF
+	&SEVERITY &ERROR &FAIL
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&echo &off
+	&messages &on
+	&return
+	/* Done!
+	/*}}}*/
+
+	/* In case of error, make sure that the env. is reset
+	&routine bailout
+	&call niceclose
+	&type
+	&type
+	&type
+	&return &error Bailing out of AML
+	/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+

@@ -1,0 +1,309 @@
+/* Perform Buffer operations on a number of tiles, and then merge the tiles
+
+/* Hugo Ahlenius	
+
+/* Last Modified: 2003-Jul-30 10:46 (HA)
+/* $Header: /config/config/aml/arc/tilebuffer.aml,v 1.3 2003/07/30 08:47:08 hugo Exp $
+
+/* HISTORY
+/* 2003-Jun-29 -- Created the file(HA)
+
+&ARGS numOfTiles inCover outCover bufDistance inClass bufferItem
+&SETVAR doDebug = .FALSE.
+&SETVAR thisFile = [BEFORE %AML$FILE% '.aml']
+
+/* {{{ VALIDATE ARGS AND IF NOT OK, TYPE USAGE
+	&IF [NULL %numOfTiles%] &THEN &CALL usage
+	&IF NOT [TYPE %numOfTiles%] = -1 &THEN &DO
+		&TYPE numOfTiles needs to be an integer
+		&CALL usage
+	&END
+	&IF NOT [MOD %numOfTiles% 2] = 0 &THEN &DO
+		&TYPE numOfTiles needs to be an integer dividable by 2
+		&CALL usage
+	&END
+	&IF [NULL %inCover%] &THEN &CALL usage
+	&IF NOT [EXIST %inCover% -Cover] &THEN &CALL usage
+	&IF [NULL %inClass%] &THEN &SETVAR inClass = POLY
+	&IF [EXIST %outCover% -Cover] &THEN &CALL usage
+	&IF [NULL %bufDistance%] &THEN &CALL usage
+	&IF [NULL %bufferItem%] &THEN &SETVAR bufferItem = # &ELSE &SETVAR bufDistance = #
+/* }}} 
+
+/* {{{ GLOBAL VARS
+/* }}} 
+
+/* {{{ DEBUG ARGS
+	&SETVAR doCW = .FALSE.
+	&IF NOT %doDebug% &THEN &SETVAR doCW = .TRUE.
+/* }}} 
+
+/* {{{ Startup
+&ECHO &ON
+
+/*&PT &ON
+
+&SEVERITY &ERROR &ROUTINE bailout
+
+&SETVAR hasWindows = .FALSE.
+&IF "[BEFORE [SHOW &OS] ,]" eq "Windows_NT" &THEN &SETVAR hasWindows = .TRUE.
+
+&IF %hasWindows% &THEN &DO
+	/* Set it up like this if running on Windows
+	&SETVAR dirchar = \
+	&SETVAR dirTemp = 
+	&SETVAR strDatecmd = date /t
+	&WATCH %dirTemp%%thisFile%.log
+	&END
+&ELSE &DO
+	/* ...and like this if it is running on Solaris
+	&SETVAR dirTemp = ./
+	&SETVAR dirChar = /
+	&SETVAR strDatecmd = date
+	&WATCH ~/%thisFile%.log
+&END
+
+/* Just a date stamp for the log-file
+&SYSTEM %strDatecmd%
+
+&IF %doCW% &THEN &DO /* If run with debug args
+	&IF [EXISTS tempws_%thisFile% -workspace] &THEN rm -r -f tempws_%thisFile%
+	CREATEWORKSPACE tempws_%thisFile%
+&END
+WORKSPACE tempws_%thisFile%
+
+&SYSTEM killps.bat arcview
+
+/* }}} 
+
+/* {{{ INITIALIZE, set defaults
+&SETVAR intColsMax = %numOfTiles%
+&SETVAR intRowsMax = [CALC %numOfTiles% / 2]
+&SETVAR intOverLap = [CALC 360 / ( %numOfTiles% * 8.5 )]
+/* }}} 
+
+&IF %doDebug% = .FALSE. &THEN &DO
+/* {{{ COPY INITIAL COVER
+	WORKSPACE ..
+	COPY %inCover% tempws_%thisFile%\inCov1
+	WORKSPACE tempws_%thisFile%
+/* }}} 
+ 
+/* {{{ CALCULATE AND CREATE TILES
+&DO thisRow = 1 &TO %intRowsMax%
+	&DO thisCol = 1 &TO %intColsMax%
+		&SETVAR thisMinX = [CALC ( -180 ) + ( %thisCol% - 1 ) * ( 360 / %intColsMax% )]
+		&SETVAR thisMinY = [CALC ( 90 ) - %thisRow% * ( 180 / %intRowsMax% )]
+		&SETVAR thisMaxX = [CALC ( -180 + %intOverLap% ) + %thisCol% * ( 360 / %intColsMax% )]
+		&SETVAR thisMaxY = [CALC ( 90 + %intOverLap% ) - ( %thisRow% - 1 ) * ( 180 / %intRowsMax% )]
+		&IF %thisMinX% LT -180 &THEN &SETVAR thisMinX = -180
+		&IF %thisMaxX% GT 180 &THEN &SETVAR thisMaxX = 180
+		&IF %thisMinY% LT -90 &THEN &SETVAR thisMinY = -90
+		&IF %thisMaxY% GT 90 &THEN &SETVAR thisMaxY = 90
+		BOXIT %thisMinX% %thisMinY% %thisMaxX% %thisMaxY% box%thisRow%_%thisCol%__1
+	&END
+&END
+/* }}} 
+
+/* {{{ CLIP IN COVER
+&DO thisRow = 1 &TO %intRowsMax%
+	&DO thisCol = 1 &TO %intColsMax%
+		CLIP inCov1 box%thisRow%_%thisCol%__1 inCov%thisRow%_%thisCol%__2 %inClass%
+	&END
+&END
+/* }}} 
+
+/* {{{ REPROJECT INCOVER
+&DO thisRow = 1 &TO %intRowsMax%
+	&DO thisCol = 1 &TO %intColsMax%
+		&DESCRIBE box%thisRow%_%thisCol%__1
+		&SETVAR thisCenterXDeg = [TRUNCATE [CALC ( %DSC$XMAX% + %DSC$XMIN% ) / 2]]
+		&SETVAR thisCenterYDeg = [TRUNCATE [CALC ( %DSC$YMAX% + %DSC$YMIN% ) / 2]]
+		&SETVAR thisCenterXMin = [ABS [ROUND [CALC ( ( ( %DSC$XMAX% + %DSC$XMIN% ) / 2 ) - %thisCenterXDeg% ) * 60]]]
+		&SETVAR thisCenterYMin = [ABS [ROUND [CALC ( ( ( %DSC$YMAX% + %DSC$YMIN% ) / 2 ) - %thisCenterYDeg% ) * 60]]]
+		PROJECTDEFINE COVER inCov%thisRow%_%thisCol%__2
+			PROJECTION Geographic
+			UNITS DD
+			PARAMETERS
+		PROJECT COVER inCov%thisRow%_%thisCol%__2 inCov%thisRow%_%thisCol%__3
+			OUTPUT
+			PROJECT LAMBERT_AZIMUTHAL
+			UNITS Meters
+			PARAMETERS
+			0
+			%thisCenterXDeg% %thisCenterXMin% 0
+			%thisCenterYDeg% %thisCenterYMin% 0
+			0
+			0
+		END
+		CLEAN inCov%thisRow%_%thisCol%__3 inCov%thisRow%_%thisCol%__4
+		PROJECT COVER box%thisRow%_%thisCol%__1 box%thisRow%_%thisCol%__2
+			INPUT
+			PROJECTION Geographic
+			UNITS DD
+			PARAMETERS
+			OUTPUT
+			PROJECT LAMBERT_AZIMUTHAL
+			UNITS Meters
+			PARAMETERS
+			0
+			%thisCenterXDeg% %thisCenterXMin% 0
+			%thisCenterYDeg% %thisCenterYMin% 0
+			0
+			0
+		END
+		CLEAN box%thisRow%_%thisCol%__2
+	&END
+&END
+/* }}} 
+
+/* {{{ PERFORM BUFFERING (AND CLIP)
+PRECISION SINGLE SINGLE
+&DO thisRow = 1 &TO %intRowsMax%
+	&DO thisCol = 1 &TO %intColsMax%
+		BUFFER inCov%thisRow%_%thisCol%__4 buf%thisRow%_%thisCol%__1 %bufferItem% # %bufDistance% 1500 %inClass% # #
+		CLIP buf%thisRow%_%thisCol%__1 box%thisRow%_%thisCol%__2 buf%thisRow%_%thisCol%__2
+	&END
+&END
+/* }}} 
+
+/* {{{ CONVERT TO GRID AND PROJECT BACK TO GEOGRAPHIC
+&DO thisRow = 1 &TO %intRowsMax%
+	&DO thisCol = 1 &TO %intColsMax%
+		POLYGRID buf%thisRow%_%thisCol%__2 buf%thisRow%_%thisCol%__3 INSIDE
+			6000
+			Y
+		PROJECT GRID buf%thisRow%_%thisCol%__3 buf%thisRow%_%thisCol%__4 # NEAREST 0.1
+			OUTPUT
+			PROJECT Geographic
+			UNITS DD
+			PARAMETERS
+		END
+	&END
+&END
+/* }}} 
+&END
+
+/* {{{ JOIN THE MAPS
+GRID
+	SETWINDOW -180 -90 180 90
+	SETCELL 0.1
+	&DO thisRow = 1 &TO %intRowsMax%
+		&DO thisCol = 1 &TO %intColsMax%
+			&IF NOT [EXIST buf5 -grid] &THEN
+				buf5 = buf%thisRow%_%thisCol%__4
+			&ELSE &DO
+				DOCELL
+					if (ISNULL(buf%thisRow%_%thisCol%__4)) {
+						tempgrid = buf5
+					} else {
+						if (ISNULL(buf5)) {
+							tempgrid = buf%thisRow%_%thisCol%__4
+						} else {
+							if (buf5 == buf%thisRow%_%thisCol%__4) {
+								tempgrid = buf5
+							} else {
+								if (buf5 == 100 || buf%thisRow%_%thisCol%__4 == 100) {
+									tempgrid = 100
+								} else {
+									if (buf5 == 1 || buf%thisRow%_%thisCol%__4 == 1) {
+										tempgrid = 1
+									} else {
+										tempgrid = buf%thisRow%_%thisCol%__4
+									}
+								}
+							}
+						}
+					}
+				END
+				KILL buf5 ALL
+				RENAME tempgrid buf5
+			&END
+		&END
+	&END
+QUIT
+GRIDPOLY buf5 buf6
+/* }}} 
+
+COPY buf6 ..\%outCover%
+
+&CALL niceclose
+&RETURN
+
+/* -------------------------------------
+/* SUBROUTINES BLOCK/*{{{*/
+
+/* {{{ USAGE
+&ROUTINE usage
+	&TYPE
+	&TYPE USAGE %thisFile% numOfTiles inCover outCover bufDistance {POLY | LINE | POINT | NODE} {bufferItem}
+	&TYPE     (Note that inCover *needs* to be in 'geographic' projection)
+	&TYPE     (Note that numOfTiles needs to be dividable by 2)
+	&STOP
+&RETURN
+/* }}} 
+
+/* {{{ RESET
+&ROUTINE reset
+	&ECHO &OFF
+	&PT &OFF
+	&IF not [NULL %doDebug%] &THEN &STOP
+&RETURN
+/* }}} 
+
+/* {{{ MESSAGE
+/* Sends the text in the %strMessageToSend% string
+&ROUTINE message
+	&SETVAR strSystemInfo = [extract 5 [show &os]] [extract 2 [SHOW &PT ALL]]
+	&IF %hasWindows% eq .TRUE. &THEN &DO
+		&SYSTEM net send localhost --- %strMessageToSend% %strSystemInfo%
+	&END
+	&ELSE &DO
+	&END
+&RETURN
+/* }}} 
+
+/* FINISH IT OFF NICELY/*{{{*/
+&ROUTINE niceclose
+
+	/* Just a date stamp for the log-file
+	&SYSTEM %strDatecmd%
+
+	&ECHO &OFF
+	&MESSAGES &ON
+	&WATCH &OFF
+	&SEVERITY &ERROR &IGNORE
+	&if %:program% = PROJECT &then end
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	&if %:program% <> ARC &then quit
+	LAYER remove lyrRemoteIntPoly
+	LAYER remove lyrRemoteNatPoly
+	LAYER remove lyrLocalIntPoint
+	LAYER remove lyrLocalNatPoint
+	dataset disconnect connGRIDA
+	dataset disconnect connWCMC
+	w ..
+&return
+/*}}}*/
+
+/* In case of error, make sure that the env. is reset
+&ROUTINE bailout
+	&CALL reset
+
+	&SEVERITY &ERROR &IGNORE
+
+	&SETVAR strMessageToSend = "BAILOUT- %thisFile%"
+	&CALL message
+
+	&CALL niceclose
+	&TYPE
+	&TYPE
+	&TYPE
+&RETURN &ERROR BAILING OUT OF AML
+/* end error handling
+
+/* END SUBROUTINES BLOCK
+/*}}}*/
+
+

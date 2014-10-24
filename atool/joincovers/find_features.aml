@@ -1,0 +1,191 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: FIND_FEATURES.AML
+/*   Purpose: Query all coverages in a text file list to find feature 
+/*            classes.  Set variables containing features found per cover,
+/*            a list of unique features found in all covers, and counts of
+/*            how often each class appears.
+/*
+/*--------------------------------------------------------------------------
+/*     Usage: FIND_FEATURES INIT <covers_file> <prefix> <variable_name>
+/*
+/* Arguments:   covers_file - ASCII text list of coverages (name and path)
+/*                   prefix - prefix for feature and percentage globals.
+/*            variable_name - to hold a list of all unique feature classes
+/*                            found in coverages (may not be common to
+/*                            all coverages)
+/*                  
+/*  Routines:    INIT - check args, set up loop structure
+/*               LOOP - Find feature classes and set vars for current cover,
+/*                      called by file_loop_aml for every record in file.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*  
+/*   Globals: .find_features$*
+/*--------------------------------------------------------------------------
+/*     Calls: describe_covers.aml
+/*            file_loop_aml.aml
+/*            file_count_records.aml
+/*--------------------------------------------------------------------------
+/*     Notes: 1. Do not include global period '.' in prefix argument.
+/*            2. Blank subclasses receive a '-' in variables (ANNO.-).
+/*            3. Does not check existence of covers. See check_exists.aml.
+/*
+/*            4. Example output variables:
+/*
+/*            One global is set FOR EACH COVER listing the features found: 
+/*                .<prefix>$<cover>_feats = poly line anno.-
+/*
+/*            A global is set containing all the feature classes found in
+/*            the coverages, each class not necessarily in ALL the covers:
+/*                .<variable_name> = poly line anno.- region.sub
+/*
+/*            One global is set FOR EACH FEATURE CLASS in the above list:
+/*                .<prefix>$POLY_percent = 100
+/*                .<prefix>$ANNO-_percent = 25 etc...
+/* 
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up loop structure.
+
+/* Extract args.
+&s file = [extract 1 [unquote %arglist%]]
+&s .find_features$prefix = [extract 2 [unquote %arglist%]]
+&s .find_features$var = [extract 3 [unquote %arglist%]]
+
+&if [null %file%] or [null %.find_features$prefix%] or ~
+   [null %.find_features$var%] &then
+  &call usage
+  
+/* Make sure file list exists.
+&if not [exists %file% -file] &then
+  &return Input file %file% not found.
+
+&run describe_covers init %file% find_features
+
+/* Loop through each record/cover and find feature classes
+&run file_loop_aml %file% [quote find_features LOOP] .find_features$record
+
+/* Sum up the counts for feature classes and turn into percentages.
+&run file_count_records init %file% .find_features$totalcovers
+&type  Found these features:
+&do class &list [value %.find_features$var%]
+  &if not [null %class%] and not [null [value .find_features$%class%num]]~
+   &then &do
+    &s num [calc [value .find_features$%class%num] * 100]
+    &s .%.find_features$prefix%$%class%_percent = ~
+     [calc %num% / %.find_features$totalcovers%]
+    &s curformat [show &format]
+    &format 2
+    &type  [unquote [format '%1% exists in %2% percent of ~
+coverages' %class% [value .%.find_features$prefix%$%class%_percent]]]
+&format %curformat%
+  &end
+&end
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+/* Find features in the current cover.
+
+/* Check for subclasses by reading variables set by describe_covers.
+&type  Finding feature classes in %.find_features$record%...
+&do namelist &list annotationnames regionnames routenames
+  &do name &list [value .find_features$%.find_features$record%|DSC$%namelist%]
+    &s short [before %namelist% names]
+    &if %short% cn 'anno' &then 
+      &s short = anno
+    &s class %short%.%name%
+    &call BUILD_LISTS_AND_COUNT
+    &if %short% = route &then &do
+      &if [exists %.find_features$record% -section.%name%] &then &do
+        &s class section.%name%
+        &call BUILD_LISTS_AND_COUNT
+      &end
+    &end
+  &end
+&end
+
+/* Check for standard feature classes, blank subclasses anno, region, route. 
+&do class &list line node point polygon anno region route tic
+  &if [exists %.find_features$record% -%class%] &then &do
+    &call BUILD_LISTS_AND_COUNT
+  &end
+&end
+
+&return
+
+/*----------------------------
+&routine BUILD_LISTS_AND_COUNT
+/*----------------------------
+/* Called from LOOP for every feature class (%class%) found.
+/* Keeps count of how many times a feature class occurs later to be used as 
+/* a percentage. Also build a master list of available classes found in ALL
+/* covers.
+
+/* Increment the class number.
+&if not [variable .find_features$%class%num] &then
+  &s .find_features$%class%num = 0
+&s .find_features$%class%num [calc [value .find_features$%class%num] + 1]
+
+/* If feature class is not in master list, add it.                
+&if [keyword %class% [value %.find_features$var%]] = 0 &then &do
+  &s %.find_features$var% = [value %.find_features$var%] %class%
+&end
+
+/* If class is ambiguous, report?.
+/*&if [keyword %class% [value %.find_features$var%]] lt 0 &then
+/*  &type  Ambiguous keyword. CLASS: %class%, LIST: [value %.find_features$var%]
+
+/* Add feature class to the current cover variable.
+&if not [variable .%.find_features$prefix%$%.find_features$record%_feats] &then
+  &s .%.find_features$prefix%$%.find_features$record%_feats
+&s .%.find_features$prefix%$%.find_features$record%_feats = ~
+  [value .%.find_features$prefix%$%.find_features$record%_feats] %class%
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: FIND_FEATURES INIT <covers_file> <prefix> <variable_name>
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return
+
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

@@ -1,0 +1,99 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: DELETE_MSK.AML
+/*   Purpose: Delete all MSK files found in coverages listed in text file.
+/*           
+/*--------------------------------------------------------------------------
+/*     Usage: DELETE_MSK INIT <covers_file> 
+/*
+/* Arguments: covers_file - ASCII text list of coverages (name and path)
+/*
+/*  Routines:    INIT - Check args, input, set up loop structure
+/*               LOOP - delete MSK files for the current cover, called by 
+/*                      file_loop_aml for every cover/record in file.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*
+/*   Globals: .delete_msk$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml
+/*--------------------------------------------------------------------------
+/*     Notes:
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up loop structure to call the LOOP routine for every record in file.
+/* Extract args.
+&s file = [extract 1 [unquote %arglist%]]
+
+&if [null %file%] &then
+  &call usage
+&if not [exists %file% -file] &then
+  &return Input file %file% not found.
+
+/* Loop through each record/cover and delete MSK files.
+/* Usage: FILE_LOOP_AML <file> <'aml_string'> <record_variable_name>
+&run file_loop_aml %file% [quote delete_msk LOOP] .delete_msk$record
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+&s mskfile [joinfile %.delete_msk$record% msk.adf -file]
+&if [exists %mskfile% -file] &then &do
+  &type  Deleting %mskfile%...
+  &s delstat [delete %mskfile% -file]
+&end
+
+&s mskfile [joinfile %.delete_msk$record% MSK.adf -file]
+&if [exists %mskfile% -file] &then &do
+  &type  Deleting %mskfile%...
+  &s delstat [delete %mskfile% -file]
+&end
+
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: DELETE_MSK INIT <covers_file>
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return &inform
+
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

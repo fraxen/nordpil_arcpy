@@ -1,0 +1,221 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: UPDATE_TOPOLOGY.AML
+/*   Purpose: Build coverages in a file list with preliminary topology.  
+/*            Clean coverages with intersecting arcs.
+/*
+/*--------------------------------------------------------------------------
+/*     Usage: UPDATE_TOPOLOGY INIT <covers_file> {NOCHECK | CHECK}  
+/*                           {NOCLEAN | CLEAN} {dangle} {fuzzy} {error_file}
+/*
+/* Arguments:     covers_file - ASCII text list of coverages (name and path)
+/*            NOCHECK | CHECK - keyword telling program to check for 
+/*                              intersecting arcs before building
+/*            NOCLEAN | CLEAN - keyword defining action to take when cover
+/*                              found with intersecting arcs
+/*                     dangle - dangle tolerance used if cleaning
+/*                      fuzzy - fuzzy tolerance used if cleaning
+/*                 error_file - ASCII text list of coverages that have 
+/*                              intersect errors, when CHECK is used.
+/* 
+/*  Routines:    INIT - check args, set up loop structure
+/*               LOOP - check and update topology of current cover, called
+/*                      for every cover/record in file by file_loop_aml.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*  
+/*   Globals: .update_topology$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml
+/*            file_init.aml
+/*            file_search_record.aml
+/*            file_append_record.aml
+/*--------------------------------------------------------------------------
+/*     Notes: 1. If a poly cover is found with intersecting arcs and NOCLEAN
+/*            is used, the cover is not cleaned or built.  The cover
+/*            is written to the error file.
+/*            2. Intersecting arcs in line only covers are built.
+/*            3. Does not check existence of covers, see check_exists.aml
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up loop structure.
+
+/* Check program
+&if [show program] ne ARC &then
+  &return Run [before %AML$FILE% .aml] from ARC.
+
+/* Extract arglist.
+&s file = [extract 1 [unquote %arglist%]]
+&s .update_topology$check_option = [extract 2 [unquote %arglist%]]
+&s .update_topology$clean_option = [extract 3 [unquote %arglist%]]
+&s .update_topology$dangle = [extract 4 [unquote %arglist%]]
+&s .update_topology$fuzzy = [extract 5 [unquote %arglist%]]
+&s .update_topology$errorfile = [extract 6 [unquote %arglist%]]
+
+&if [null %file%] &then
+  &call usage
+&if not [null %.update_topology$check_option%] &then &do
+  &if [upcase %.update_topology$check_option%] ne NOCHECK and ~
+      [upcase %.update_topology$check_option%] ne CHECK and ~
+      %.update_topology$check_option%_ ne #_ &then
+    &call USAGE
+&end
+&else
+  &s [upcase .update_topology$check_option] = NOCHECK
+&if not [null %.update_topology$clean_option%] &then &do
+  &if [upcase %.update_topology$clean_option%] ne NOCLEAN and ~
+      [upcase %.update_topology$clean_option%] ne CLEAN and ~
+      %.update_topology$clean_option%_ ne #_ &then
+    &call USAGE
+&end
+&else
+  &s .update_topology$clean_option = NOCLEAN
+
+&if %.update_topology$clean_option%_ = #_ &then
+  &s .update_topology$clean_option = NOCLEAN
+
+&if [null %.update_topology$fuzzy%] &then
+  &s .update_topology$fuzzy #
+&if [null %.update_topology$dangle%] &then
+  &s .update_topology$dangle #
+
+/* Make sure file list exists.
+&if not [exists %file% -file] &then
+  &return Input file %file% not found.
+
+/* Make sure error file list doesn't exist.
+&if not [null %.update_topology$errorfile%] &then &do
+  &if [exists %.update_topology$errorfile% -file] &then
+    &return Error file %.update_topology$errorfile% already exists.
+&end
+
+/* Create the error file.
+&run file_init .update_topology$errorout xx [before %AML$FILE% .aml]
+
+/* Loop through each record/cover and check, update if needed.
+&run file_loop_aml %file% [quote update_topology LOOP] ~
+     .update_topology$record
+
+/* Create final error file.
+&if not [null %.update_topology$errorfile%] &then
+  &s restat [rename %.update_topology$errorout% %.update_topology$errorfile%]
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+/* Check and update current cover for preliminary topology.
+
+&type  Checking topology in %.update_topology$record%...
+
+/* Check cover for preliminary topology.
+&s .update_topology$build .TRUE.
+&s .update_topology$justcleaned .FALSE.
+&s .update_topology$intsfound = .FALSE.
+
+/* Determine existing topology (line, poly, both & check for point).
+&s onlypoints .FALSE.
+&describe %.update_topology$record%
+&s topol = poly
+&if %DSC$PAT_BYTES% le 0 &then
+  &s topol = line
+&if not %DSC$QTOPOLOGY% and %DSC$XAT_BYTES% gt 0 &then &do /* Points, no polys.
+  &if %DSC$AAT_BYTES% gt 0 &then /* Arcs exist.
+    &s topol = line
+  &else &do /* Only points.
+    &s onlypoints .TRUE.
+  &type  Cover %.update_topology$record% is a POINT coverage, ignoring...
+  &end
+&end
+
+&if %DSC$QEDIT% and not %onlypoints% &then &do
+
+  /* Check for intersecting arcs if user choice.
+  &if [upcase %.update_topology$check_option%] = CHECK &then &do
+    intersecterr %.update_topology$record%
+    &if not [null %aml$message%] &then
+      &s .update_topology$intsfound .TRUE.
+
+    /* If intersections found, exit or clean.
+    &if %.update_topology$intsfound% &then &do
+      &run file_append_record %.update_topology$errorout% ~
+           %.update_topology$record% # NOSEARCH .update_topology$appendvar
+      &if [upcase %.update_topology$clean_option%] = NOCLEAN &then &do
+        &type  Found intersections in cover %.update_topology$record%.
+        &s .update_topology$build .FALSE.
+      &end
+      &else &do
+        &type  Cleaning %.update_topology$record% with %topol% option:
+        &type   dangle: %.update_topology$dangle%, fuzzy: %.update_topology$fuzzy%
+        clean %.update_topology$record% %.update_topology$record% ~
+         %.update_topology$dangle% %.update_topology$fuzzy% %topol%
+        &s .update_topology$justcleaned .TRUE.
+      &end
+    &end
+  &end
+  
+  /* Build topology unless an intersection was found and not cleaned. 
+  &if %.update_topology$build% &then &do
+    &if not %.update_topology$justcleaned% &then &do
+      &type  Building %.update_topology$record% with the %topol% option...
+      build %.update_topology$record% %topol%
+    &end
+    &s justcleaned .FALSE.
+  &end
+
+  /* OKay to build if ins found and line only.
+  &if not %.update_topology$build% and %topol% = line &then &do
+    &type  Building %.update_topology$record% with the %topol% option...
+    build %.update_topology$record% %topol%
+  &end
+
+&end
+
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: UPDATE_TOPOLOGY INIT <covers_file> {NOCHECK | CHECK} 
+&type                        {NOCLEAN | CLEAN} {dangle} {fuzzy} {error_file}
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

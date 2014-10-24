@@ -1,0 +1,143 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS- Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: JCOVS5.AML
+/*   Purpose: Get output cover from user. 
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT   /*  {'position'} {'stripe'} {MODELESS | MODAL}
+/*-----------
+/* Initialize tool interface
+/*
+&set position = [extract 1 [unquote %arglist%]]
+&set stripe   = [extract 2 [unquote %arglist%]]
+&set modality = [extract 3 [unquote %arglist%]]
+&if [null %position%] or %position%_ = #_ &then 
+  &set position = &cc &screen &cc
+&if [null %stripe%] or %stripe%_ = #_ &then 
+  &set stripe = JoinCovers - Step 5 of 5 - Output Coverage
+&if [null %modality%] or %modality%_ = #_ &then
+  &set mode =
+&else
+  &if [translate %modality%] = MODAL &then
+    &set mode = &modal
+  &else
+    &set mode = 
+/*
+/* Issue thread delete self if thread depth = 2 and input is tty 
+&if [show &thread &depth] = 2 and [extract 1 [show &thread &stack]] = tty &then
+  &set launch = &thread &delete &self 
+&else 
+  &set launch
+/*
+&if [show &thread &exists tool$jcovs5] &then
+   &thread &delete tool$jcovs5
+&thread &create tool$jcovs5 %mode% ~
+  &menu jcovs5 ~
+  &position [unquote %position%] ~
+  &stripe [quote [unquote %stripe%]] ~
+  &pinaction '&run jcovs5 exit'
+%launch%
+/*
+&return
+
+/*-------------
+&routine BROWSE
+/*-------------
+/* Browse the system to return a new coverage name and path. 
+/*     Usage: savefileas INIT <in_file_name> <variable_name> 
+/*                       {ASCII | COVER| INFO} {'position'} {'stripe'}
+&r savefileas init out_cover .jcovs5$cover COVER # ~
+ [quote Save Output Coverage]
+&call CHECK_OUTPUT
+&return
+
+/*-------------------
+&routine CHECK_OUTPUT
+/*-------------------
+/* Check that workspace exists and cover doesn't.
+&s continue .TRUE.
+&if not [null %.jcovs5$cover%] &then &do
+  &if not [exists [dir %.jcovs5$cover%] -workspace] &then &do
+   &s continue .FALSE.
+   &run msinform init [quote [dir %.jcovs5$cover%]] ~
+            [quote is not a valid workspace.]                
+  &end
+  &else &do
+    &if [exists %.jcovs5$cover% -cover] &then &do
+    &s continue .FALSE.
+    &run msinform init [quote The coverage %.jcovs5$cover%] ~
+            [quote  already exists.]
+    &end
+  &end
+&end
+&else &do
+  &s continue .FALSE.
+  &type  Specify an output coverage.
+&end
+&return
+
+/*-----------
+&routine BACK
+/*-----------
+/* Go back to previous dialog.
+&s .joincovers$nextaml jcovs4 init
+&call EXIT
+&return
+
+/*-------------
+&routine FINISH
+/*-------------
+&call CHECK_OUTPUT
+&if %continue% &then &do
+  &s .joincovers$nextaml FINISHED
+  &call EXIT
+&end
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: JCOVS5 INIT {'''position'''} {'''stripe'''} {MODELESS | MODAL}
+&type Usage
+&return &inform 
+
+/*-------------
+&routine CANCEL
+/*-------------
+&run joincovers CANCEL
+&if %.joincovers$cancel% &then
+  &call EXIT
+&return
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+/*&dv .jcovs5$*
+&if [show &thread &exists tool$jcovs5] &then 
+  &thread &delete tool$jcovs5
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+/* &call exit
+&return &warning An error has occurred in routine: %routine% (JCOVS5.AML).
+

@@ -1,0 +1,134 @@
+/* ---------------
+/* shape2cover.aml
+/* ---------------
+/*
+/* Converts a shapefile to a coverage, including building for required features.
+/* By default, we import with a subclass. We then transfer any routes to the
+/* line features, and any regions to the polygon features. 
+/*
+/* Note - this AML uses the CLEAN command, which may not be advisable in a
+/* dataset stored in Decimal Degrees. You may prefer to project your shapefile
+/* before running this AML.
+/*
+/* History
+/* 17 Nov 1998 Original coding - Stephen Lead
+/*  1 Aug 2000 - Fuzzy tolerance lowered to avoid "Segment table full (CRESEG)"
+/*               error seen on some datasets during CLEAN
+/*  6 Feb 2001 - drop unnecessary items from polygon coverage
+/* 26 Feb 2001 - set the precision
+/* 
+/* Please report any problems or other comments to slead@esriau.com.au
+/*
+/* ============================================================================
+&severity &error &routine bailout
+&args shape cover workspace
+&WATCH %temp%\%aml$file%.log
+
+&call checkargs
+&call process
+
+&return
+
+/* ============================================================================
+&routine process
+
+
+   /* Set the precision.
+   precision double double
+
+   /* Convert the shapefile to a coverage, using a subclass.
+   &s temp1 [scratchname -prefix s2c -directory]
+   shapearc %shape% %temp1% temp
+   &s temp2 [scratchname -prefix s2c -directory]
+
+   /* Decide which features to maintain in the new coverage.
+   &describe %temp1%
+   &if %DSC$arcs% > 0 &then &s type line
+   &if %DSC$points% > 0 and %DSC$polygons% = 0 &then &s type point
+   &if ^ [null %DSC$regions%] &then
+      &if %DSC$regions% > 0 &then &s type polygon
+   &if [null %type%] &then
+      &do
+      &s str Unknown cover type - unable to continue...; &call bailout
+      &end
+
+   /* Since we're not worried about sections we transfer them across to the
+   /* arcs. Similarly, we transfer the region subclass to the polygons.
+   &if %type% = line &then
+      &do
+      routearc %temp1% temp %cover%
+      &if [iteminfo %cover% -line %temp1%-id -exists] &then
+         dropitem %cover%.aat %cover%.aat %temp1%-id
+      &end   
+   &if %type% = polygon &then
+      &do
+      &ty Converting shapefile to region coverage...
+      build %temp1% line
+      clean %temp1% %temp2% 0.000001 0.000001 poly
+      &s tempinfo [scratchname -prefix s2c -info]
+      &ty Converting regions to polygons...
+      regionpoly %temp2% %cover% temp %tempinfo%
+
+      /* Remove some unnecessary items.
+      dropitem %cover%.pat %cover%.pat
+         poly#
+         subclass
+         subclass#
+         rings_OK
+         rings_NOK
+         end
+      
+      &s null [delete %tempinfo% -info]
+      &end
+   &if %type% = point &then
+      &do 
+      build %temp1% point
+      copy %temp1% %cover%
+      &end
+
+   /* Clean up the temporary coverages.
+      &do killcov &list %temp1% %temp2%
+      &if [exist %killcov% -cover] &then kill %killcov% all
+      &end
+
+   &ty
+   &ty The %type% cover %cover% was created from the shapefile %shape%.shp.
+   &ty
+
+   &return
+
+/* ============================================================================
+&routine checkargs
+
+	&if [null %shape%] | [quote %shape%] = '#' &then &call usage
+	&if [null %cover%] | [quote %cover%] = '#' &then &call usage
+	&SETVAR shape [before [quote %shape%] '.']
+	&IF [exist %cover% -cover] &THEN &DO
+		&SETVAR str Cover %cover% already exists ...; &CALL bailout
+	&END
+	/* {{{ GET DIRECTORY FROM PATH
+	&if NOT [DIR %cover%] = '.' &THEN &DO
+		&SETVAR workspace = [DIR %cover%]
+		&SETVAR cover = [after %cover% [dir %cover%]\]
+	&END
+	/* }}} 
+	&IF NOT [null %workspace%] &then WORKSPACE %workspace%
+&return
+
+/* ============================================================================
+&routine usage
+
+   &s str Usage: &r %aml$file% <shapefile> <cover>
+   &return; &return &warning %str%
+
+/* ============================================================================
+&routine bailout
+
+   &severity &error &ignore
+   &severity &warning &ignore
+   &if not [variable str] &then &s str Bailing out of %aml$file%...
+   &return; &return &warning %str%
+	&PAUSE
+/* ============================================================================
+/* END OF FILE
+/* ============================================================================

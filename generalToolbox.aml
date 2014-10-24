@@ -1,0 +1,28 @@
+&ARGS 1 2 3 4 5 6 7 8 9
+&SEVERITY &ERROR &ROUTINE bailout
+&IF %2% = ' ' &THEN &SETVAR 2 =
+&IF %3% = ' ' &THEN &SETVAR 3 =
+&IF %4% = ' ' &THEN &SETVAR 4 =
+&IF %5% = ' ' &THEN &SETVAR 5 =
+&IF %6% = ' ' &THEN &SETVAR 6 =
+&IF %7% = ' ' &THEN &SETVAR 7 =
+&IF %8% = ' ' &THEN &SETVAR 8 =
+&IF %9% = ' ' &THEN &SETVAR 9 =
+WORKSPACE %1%
+&SYSTEM cls
+&TYPE
+&TYPE
+&PT &ON
+&ECHO &ON
+%2% %3% %4% %5% %6% %7% %8% %9%
+&ECHO &OFF
+&PT &OFF
+&TYPE
+&TYPE
+&PAUSE &SECONDS 2
+&RETURN
+
+&ROUTINE bailout
+	&PAUSE &SECONDS 10
+&RETURN &ERROR Bailing out of AML
+

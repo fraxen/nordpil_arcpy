@@ -1,0 +1,142 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: CREATE_CLASSES.AML
+/*   Purpose: Create feature classes and attribute tables for all covers
+/*            in a text file list.
+/*            
+/*--------------------------------------------------------------------------
+/*     Usage: CREATE_CLASSES INIT <covers_file> <feature_classes...>
+/*                           
+/*
+/* Arguments: covers_file - ASCII text list of coverages (name and path)
+/*             (features) - one or more feature attribute classes
+/*                          (ARC, NODE, POINT, TIC, LINK, ANNO.sub, 
+/*                           SECTION.sub, ROUTE.sub, REGION.sub,)
+/* 
+/*  Routines:    INIT - check args, set up loop structure
+/*               LOOP - copy the current cover to workspace, called by 
+/*                      file_loop_aml for every cover/record in file.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*  
+/*   Globals: .create_classes$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml
+/*--------------------------------------------------------------------------
+/*     Notes: 1. Does not check existence of covers. See check_exists.aml.
+/*            2. Polygon topology not supported. See update_topology.aml.
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up loop structure.
+
+/* Check program
+&if [show program] ne ARC &then
+  &return Run [before %AML$FILE% .aml] from ARC.
+
+/* Extract args.
+&s file = [extract 1 [unquote %arglist%]]
+&s .create_classes$features = [unquote [subst %arglist% %file%]]
+
+&if [null %file%] or [null %.create_classes$features%] &then
+  &call usage
+  
+/* Make sure file list exists
+&if not [exists %file% -file] &then
+  &return Input file %file% not found.
+
+/* Check that feature class are valid and make all upcase.
+&do feat &list %.create_classes$features%
+  &s feat = [upcase %feat%] 
+  &if %feat% ne ARC and %feat% ne NODE and %feat% ne POINT ~
+   and %feat% ne LINE and %feat% ne POLY and %feat% ne POLYGON ~
+    and %feat% ne TIC and %feat% ne LINK &then &do
+     &if %feat% nc 'ANNO' and %feat% nc 'REGION' and %feat% nc 'ROUTE' ~
+      and %feat% nc 'SECTION' &then
+       &return Feature class %feat% is not supported.
+  &end
+&end
+
+/* Start AE.
+&s curdisplay = [show display]
+display 9999 size 10 10
+arcedit
+
+/* Loop through each record/cover and create classes.
+&run file_loop_aml %file% [quote create_classes LOOP] .create_classes$record
+
+/* Save all changes and quit AE.
+save all yes
+quit
+display %curdisplay%
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+/* Create classes in current cover if needed.
+&do feat &list %.create_classes$features%
+  &if %feat% = POLY or %feat% = POLYGON &then
+    &type  Can not create POLYGON topology.  Use CLEAN or BUILD.
+  &else &do
+    &severity &error &ignore
+    &if not [exists %.create_classes$record% -%feat%] &then &do
+      ec %.create_classes$record%
+      createfeature %feat%  
+      ef %feat%
+      createattributes
+    &end
+    &severity &error &routine bailout
+  &end
+&end
+save
+re all yes
+
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: CREATE_CLASSES INIT <covers_file> <feature_classes..>
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&if [variable curdisplay] &then
+  display %curdisplay%
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return &inform
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

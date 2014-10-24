@@ -1,0 +1,110 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: COPY_COVERS.AML
+/*   Purpose: Copy all covers in a text file to a specific workspace.  If
+/*            the workspace does not exist, it will be created.
+/*            
+/*--------------------------------------------------------------------------
+/*     Usage: COPY_COVERS INIT <covers_file> <workspace>
+/*
+/* Arguments: covers_file - ASCII text list of coverages (name and path)
+/*              workspace - existing or new workspace in to which all covers
+/*                          will be copied
+/* 
+/*  Routines:    INIT - check args, set up loop structure
+/*               LOOP - copy the current cover to workspace, called by 
+/*                      file_loop_aml for every cover/record in file.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*  
+/*   Globals: .copy_covers$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml
+/*--------------------------------------------------------------------------
+/*     Notes: 1. Does not check existence of covers. See check_exists.aml.
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up loop structure.
+
+/* Check program
+&if [show program] ne ARC &then
+  &return Run [before %AML$FILE% .aml] from ARC.
+
+/* Extract args.
+&s file = [extract 1 [unquote %arglist%]]
+&s .copy_covers$worksp = [extract 2 [unquote %arglist%]]
+
+&if [null %file%] or [null %.copy_covers$worksp%] &then
+  &call usage
+  
+/* Make sure file list exists.
+&if not [exists %file% -file] &then
+  &return Input file %file% not found.
+
+/* Create workspace if needed.
+&if not [exists %.copy_covers$worksp% -workspace] &then &do
+  createworkspace %.copy_covers$worksp%
+  &ty  Created workspace %.copy_covers$worksp%
+&end
+
+/* Loop through each record/cover and copy.
+&run file_loop_aml %file% [quote copy_covers LOOP] .copy_covers$record
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+/* Check current cover/record for existence.
+&s covername [entryname %.copy_covers$record%]
+&s coverfull [joinfile %.copy_covers$worksp% %covername%]
+&if [exists %coverfull% -cover] &then
+  &type  The cover %covername% already exists in %.copy_covers$worksp%
+&else
+  copy %.copy_covers$record% %coverfull%
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: COPY_COVERS INIT <covers_file> <workspace>
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return &inform
+
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

@@ -1,0 +1,31 @@
+7
+/* ---------------------------------------------------------------------------
+/*          JOINCOVERS - Geomatics Senior Project - University of Florida
+/* ---------------------------------------------------------------------------
+/*    Menu: JCOVS2.MENU
+/* Purpose: jcovs2 tool interface.
+/* ---------------------------------------------------------------------------
+/* History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/* ===========================================================================
+    Choose processing options:
+
+       %c3  ^Find variable feature classes
+       %c4  ^Handle variable items
+       %c6  ^Offset User-IDs
+       %c7  ^Offset Tic-IDs
+
+
+
+
+
+
+
+    %cancel0                         %butto2     %butt3
+%c3 CHECKBOX .jcovs2$featflag HELP 'Check to search coverages for variable features' INITIAL .TRUE.
+%c4 CHECKBOX .jcovs2$itemflag HELP 'Check to handle variable items' KEEP INITIAL .FALSE. RETURN '&run jcovs2 UPDATE'
+%c6 CHECKBOX .jcovs2$userflag HELP 'Calculate unique User-IDs (FEATURES)'INITIAL .FALSE.
+%c7 CHECKBOX .jcovs2$ticflag HELP 'Calculate unique Tic-IDS (TICS)' INITIAL .FALSE.
+%cancel0 BUTTON CANCEL HELP 'Cancel the JoinCovers Wizard' 'Cancel' &run jcovs2 CANCEL
+%butto2 BUTTON KEEP HELP 'Return to Step 1' '<< Back' &run jcovs2 BACK
+%butt3 BUTTON KEEP HELP 'Go to Step 3' 'Next >>' &run jcovs2 NEXT
+%FORMOPT NEXTFIELD ADVANCE MESSAGEVARIABLE .jcovs2$msg SETVARIABLES IMMEDIATE

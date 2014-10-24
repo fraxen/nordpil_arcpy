@@ -1,0 +1,30 @@
+7
+/* ---------------------------------------------------------------------------
+/*          JOINCOVERS - Geomatics Senior Project - University of Florida
+/* ---------------------------------------------------------------------------
+/*    Menu: JCOVS5.MENU
+/* Purpose: jcovs5 tool interface.
+/* ---------------------------------------------------------------------------
+/* History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/* ===========================================================================
+       Specify output cover:
+
+     %edi2                               %button0
+
+     %button1
+
+
+
+
+
+
+
+
+    %b3                              %b4         %butt5
+%edi2 INPUT .JCOVS5$COVER 28 KEEP HELP 'Name of output coverage' TYPEIN YES SCROLL NO SIZE 1024 RETURN '&r jcovs5 CHECK_OUTPUT' CHARACTER
+%button0 BUTTON KEEP HELP 'Search file system to save coverage' 'Browse...' &r jcovs5 BROWSE
+%button1 BUTTON KEEP HELP 'Run the workspace manager ArcTool' 'New Workspace...' &r workspace_mngr init
+%b3 BUTTON CANCEL HELP 'Cancel the JoinCovers Wizard' 'Cancel' &run jcovs5 CANCEL
+%b4 BUTTON KEEP HELP 'Return to Step 4' '<< Back' &run jcovs5 BACK
+%butt5 BUTTON KEEP HELP 'Complete wizard and begin processing' 'Finish' &run jcovs5 FINISH
+%FORMOPT NEXTFIELD ADVANCE MESSAGEVARIABLE .jcovs5$msg SETVARIABLES IMMEDIATE

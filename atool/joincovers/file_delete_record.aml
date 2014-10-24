@@ -1,0 +1,194 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: FILE_DELETE_RECORD.AML
+/*   Purpose: Delete a record from a file.
+/*
+/*--------------------------------------------------------------------------
+/*     Usage: FILE_DELETE_RECORD <file> <record> {out_file} {variable_name} 
+/*
+/* Arguments:         file  - the file that contains the record to delete 
+/*                   record - the string to delete
+/*                 out_file - do not modify original file
+/*            variable_name - variable returned as
+/*                            true -> record found, deleted
+/*                            false -> record not found, not deleted
+/*
+/*  Routines:  CHECK_OPENSTAT - check that file was opened without error.
+/*             CHECK_READSTAT - check that file was read without error.
+/*            CHECK_CLOSESTAT - check that file was closed without error.
+/*                      USAGE - return tool usage.
+/*                       EXIT - cleanup and exit tool.
+/*                    BAILOUT - error handling.
+/*
+/*   Globals: file_delete_record.*
+/*--------------------------------------------------------------------------
+/*     Calls: file_search_record.aml
+/*--------------------------------------------------------------------------
+/*     Notes: 1. All occurrences of <record> in <fil> will be deleted.
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args file delete_record out_file var
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments
+&if [null %file%] or [null %delete_record%] &then
+  &call usage
+&if not [null %var%] &then &do
+  &if %var%_ = #_ &then
+    &s var = .file_delete_record$trash
+&end
+&else
+  &s var = .file_delete_record$trash    
+
+/* Verify file exist.
+&if not [exists %file% -file] &then
+  &return The file %file% does not exist.
+
+/* Verify output file does not exist.
+&if not [null %out_file%] &then &do
+  &if %out_file%_ ne #_ &then &do
+    &if [exists %out_file% -file] &then
+      &return Output file %out_file% already exists.
+  &end
+&end
+
+/* Check if the record exists.
+&run file_search_record init %file% %delete_record% %var%
+&if [value %var%] &then &do
+
+  /* Copy the file to tmp file.
+  &s tmpcopy [scratchname -suffix [before %AML$FILE% .aml]]
+  &s copystat [copy %file% %tmpcopy% -file]
+
+  /* Open the tmp read file.
+  &s [before %AML$FILE% .aml]inunit = [open %tmpcopy% openstat -read]
+  &call CHECK_OPENSTAT
+  &s record = [read [value [before %AML$FILE% .aml]inunit] readstat]
+
+  /* Create the write file.
+  &s target %file%
+  &if not [null %out_file%] &then &do
+    &if %out_file%_ ne #_ &then
+      &s target %out_file%  
+  &end
+  &s [before %AML$FILE% .aml]outunit = [open %target% openstat -write]
+  &call CHECK_OPENSTAT
+
+  /* Put each record into new file (except the 'delete record')
+  &do &while %readstat% = 0 and not [null %record%]
+    &if %record% ne %delete_record% &then
+      &s writestat = [write [value [before %AML$FILE% .aml]outunit] %record%]
+    &s record = [read [value [before %AML$FILE% .aml]inunit] readstat]
+  &end
+  &call CHECK_READSTAT
+
+  /* Close files.
+  &s closestat = [close [value [before %AML$FILE% .aml]inunit]]
+  &call CHECK_CLOSESTAT
+  &s closestat = [close [value [before %AML$FILE% .aml]outunit]]
+  &call CHECK_CLOSESTAT
+
+  /* Delete the tmp file.
+  &s delstat [delete %tmpcopy% -file]
+
+&end
+
+/*&else
+/*  &type  %delete_record% not found in %file%.
+
+&call EXIT
+
+&return
+
+/*---------------------
+&routine CHECK_OPENSTAT
+/*---------------------
+/* Check status variable for open function.
+&select %openstat%
+  &when 100 
+    &do
+      &type No free AML units.
+      &call BAILOUT
+    &end
+  &when 101 
+    &do
+      &type File not found.
+      &call BAILOUT
+    &end
+  &when 102 
+    &do
+      &type Couldn't open file.
+      &call BAILOUT
+    &end
+  &when 103
+    &do
+      &type Couldn't create file.
+      &call BAILOUT
+    &end
+&end
+&return
+
+/*---------------------
+&routine CHECK_READSTAT
+/*---------------------
+/* Check the value of readstat after finding (in a loop)
+/* that it is no longer equal to 0 (no longer reading records)
+&select %readstat%
+  &when 100 
+    &do
+      &type File not open for reading.
+      &call BAILOUT
+    &end
+  &when 101 
+    &do
+      &type Error during read.
+      &call BAILOUT
+    &end
+  &when 103
+    &do
+      &type Unable to reopen file (file closed between ARC programs).
+      &call BAILOUT
+    &end
+  &when 104
+    &do
+      &type String truncated to 1,024 characters.
+      &call BAILOUT
+    &end
+&return
+
+/*----------------------
+&routine CHECK_CLOSESTAT
+/*----------------------
+/* Check that a file was closed
+&if %closestat% ne 0 &then
+  &type FILE CLOSE ERROR %closestat%.
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: FILE_DELETE_RECORD <file> <record> {out_file} {variable_name}
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit  /* Comment out later?
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

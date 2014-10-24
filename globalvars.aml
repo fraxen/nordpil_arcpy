@@ -1,0 +1,9 @@
+/* SET GLOBAL VARS
+/*
+&SETVAR .strDirGlobio =  C:\mnt\project\zGRIDp~1\203\038
+&SETVAR .strDirGislibrary = c:\mnt\data\library
+&SETVAR .strDirTemp = %temp%\
+&SETVAR .strDatecmd = now.exe
+&SETVAR .strPathSDEbin C:\programx86\gis\arcgis\arcsde\sqlexe\bin
+&RETURN
+

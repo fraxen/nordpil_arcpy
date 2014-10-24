@@ -1,0 +1,29 @@
+/* infocsv.aml
+/* Hugo Ahlenius, UNEP/GRID-Arendal
+/* $Id: infocsv.aml 301 2007-07-30 12:28:17Z hugo $
+
+/* Fetch arguments
+&ARGS inInfo outCSV
+
+/* Check if all is valid
+&IF [EXISTS %inInfo% -info] = .FALSE. &THEN &GOTO usage
+&IF [NULL %outCSV%] &THEN &SETVAR outCSV = [BEFORE %inInfo% .][AFTER %inInfo% .].csv
+
+/* Remove previous files
+&IF [EXISTS %outCSV% -file] &THEN &SYSTEM rm %outCSV%
+
+/* Get all items
+&SETVAR allItems = [LISTITEM %inInfo% -info]
+/* Output all items, filter so that it is comma separated, and output
+&SYSTEM echo %allItems% | tr -d \r | sed "s/ /,/g" | sed s/,$// > %outCSV%
+TABLES
+	SELECT %inInfo%
+	UNLOAD %outCSV%
+QUIT
+
+&RETURN
+
+&LABEL Usage
+&TYPE INFOCSV infoname csvname
+&TYPE -Exports an info-file to a csv with headers
+&RETURN

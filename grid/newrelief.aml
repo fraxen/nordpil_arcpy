@@ -1,0 +1,484 @@
+/* ======================================================
+/* AML Name: NEWRELIEF.AML /* AML Location: Coos Bay District Office
+/* ======================================================
+/* Purpose: Create a three dimentional plot draped with a theme
+/* --------------------------------------------------------------------
+/* Usage: &run newrelief.aml <outgrid> <ingrid> <incolor.lut> <hillshade-grid>
+/* --------------------------------------------------------------------
+/* I/O Files, Coverages:
+/* (Input: required)
+/* Grid theme to be draped
+/* color RGB look up table: Value red green blue
+
+/* Grid hillshade /* /* (Output) /* out-put-grid
+/* --------------------------------------------------------------------
+/* Other AML's Called:
+/* --------------------------------------------------------------------
+/* Other Programs Called:
+/* --------------------------------------------------------------------
+/* AML's Called By:
+/* --------------------------------------------------------------------
+/* AML History: /* Created by: Jeff Nighbert May 1998
+/* ======================================================
+/* Comments: This aml is run from grid and produces a grid out-put, a 3D
+/* representation of the draped theme. The aml required a theme to be draped,
+/* a color.lut and a hillshade grid.
+
+/* Jeffery S. Nighbert
+/* Bureau of Land Management
+/* 333 SW 1st Avenue
+/* Portland Oregon 97204
+
+/* phone 503-808-6399
+/* email jnighber@or.blm.gov
+/* May 1998
+/* main aml for merging two grids
+/*
+/* assumptions:
+/* you're in arc/grid and your window and mapextent are set
+/*
+/* to run:
+/* &args outgrid base base.lut theme theme.lut
+/*
+/* arg definitions
+/* outgrid - desired output grid
+/* base - first input grid - a theme category map
+/* base.lut - an ascii color lookup file - class r g b
+/* theme - second input grid - hillshade grid
+/* theme.lut - hardwired for gray
+/*
+
+&args outgrid base base.lut theme theme.lut
+
+&s version := 1.0
+&type newrelief.aml v%version% started: [date -vfull]
+
+&if [show program] ne GRID &then &goto message0
+
+&if [quote[extract 1 [show display]]] <> '9999' &then display 9999 3
+
+&if [quote %outgrid%] = 'help' &then &goto help
+
+/* check for missing args
+&if [null %outgrid%] &then &goto missing
+
+&if [null %base%] &then &goto missing
+
+&if [null %base.lut%] &then &goto missing
+
+&if [null %theme%] &then &goto missing
+
+
+/* check for existing files
+&if [exists %outgrid% -grid] &then &goto message
+
+&if ^ [exists %base% -grid] &then &goto message1
+
+&if ^ [exists %base.lut% -file] &then &goto message2
+
+
+&if ^ [exists %theme% -grid] &then &goto message3
+
+/* combine maps
+%outgrid% = combine(%base%,%theme%)
+/* add rgb fields to outgrid.vat
+
+arc additem %outgrid%.vat %outgrid%.vat r 3 3 i
+arc additem %outgrid%.vat %outgrid%.vat g 3 3 i
+arc additem %outgrid%.vat %outgrid%.vat b 3 3 i
+
+/* add grid rgb fields to combined
+
+/* add rgb fields for base to outgrid grid
+arc additem %outgrid%.vat %outgrid%.vat %base%_r 3 3 i
+arc additem %outgrid%.vat %outgrid%.vat %base%_g 3 3 i
+arc additem %outgrid%.vat %outgrid%.vat %base%_b 3 3 i
+
+/* add rgb fields for grid2 to combined grid
+arc additem %outgrid%.vat %outgrid%.vat %theme%_r 3 3 i
+arc additem %outgrid%.vat %outgrid%.vat %theme%_g 3 3 i
+arc additem %outgrid%.vat %outgrid%.vat %theme%_b 3 3 i
+
+/* calc rgbs for category and hillshade in outgrid.vat
+/* read grid colormap for grid1 and calc rgbs in outgrid.vat
+
+&s file [open %base.lut% ok -r]
+&s line [unq [read %file% ok]]
+&if %ok% = 0 &then &do
+&type Reading colormap file %base.lut%...
+&do &while %ok% = 0
+&if ^ [null %line%] &then &do
+&type %line%
+&s symbol = [extract 1 %line%]
+&type %symbol%
+/* if the first element is a number, try to process line
+/* otherwise the line is skipped
+&if [type %symbol%] = -1 &then &do
+&s red = [extract 2 %line%]
+&s green = [extract 3 %line%]
+&s blue = [extract 4 %line%]
+clearselect
+reselect %outgrid%.vat info %base% = %symbol%
+calc %outgrid%.vat info %base%_r = %red%
+calc %outgrid%.vat info %base%_g = %green%
+calc %outgrid%.vat info %base%_b = %blue%
+&type value in grid %outgrid% rgb has been set to %red% %green% %blue%
+&end
+&end
+&s line [unq [read %file% ok]]
+&end
+&s ok = [close %file%]
+
+
+/* calc rgbs in outgrid.vat to theme value
+
+clearselect
+reselect %outgrid%.vat info $recno >= 0
+calc %outgrid%.vat info %theme%_r = %theme%
+calc %outgrid%.vat info %theme%_g = %theme%
+calc %outgrid%.vat info %theme%_b = %theme%
+&type values in grid %outgrid% rgb has been set equal to %theme%
+
+/* create painted relief by calculating shadevalue for each rgb in outgrid.vat
+clearselect
+/* red
+reselect %outgrid%.vat info $recno >= 0
+calc %outgrid%.vat info ~
+r = %base%_r * ( %theme%_r / 255 )
+
+/* green
+calc %outgrid%.vat info ~
+g = %base%_g * ( %theme%_g / 255 )
+
+/* blue
+calc %outgrid%.vat info ~
+b = %base%_b * ( %theme%_b / 255 )
+
+/* create color look up table for results
+&data arc info
+ARC
+CALC $COMMA-SWITCH=-1
+SELECT [translate %outgrid%.vat]
+output ../%outgrid%.lut init
+PRINT VALUE,R,G,B
+
+quit stop
+&end
+
+/* display results
+gridpaint %outgrid% value identity nowrap %outgrid%.lut
+&type
+&type %outgrid% and %outgrid%.lut have been generated
+&type use "mapextent %outgrid%"
+&type and "gridpaint %outgrid% value identity nowrap %outgrid%.lut"
+&type to display the results
+&type
+&goto end
+
+
+/* end of program
+&goto end
+
+
+&label usage
+&type usage
+&type &r newrelief help
+&type or
+&type newrelief <outgrid> <base> <base.lut> <theme> <theme.lut>
+&type
+&goto end
+
+
+&label help
+&type ===================================================
+&type help
+&type ===================================================
+&type A basemap of elevation is to be combined with a map showing clearcuts.
+&type Newrelief.aml will create a new map in which the clearcuts will appear
+&type draped over the elevation map.
+&type
+&type Runs under Arc/Grid
+&type
+&type Creates an output GRID and a matching ascii color lookup file from
+&type two input grids and their matching ascii color lookup files
+&type
+&type &r add_transparent [unquote '~']
+&type <outgrid> <base> <base.lut> <theme> <theme.lut>
+&type
+&type [response ' ']
+&type ===================================================
+&type Notes
+&type ===================================================
+&type
+&type o A colormap file should be of the format:
+&type
+&type index_number red green blue For example:
+&type
+&type 1 255 0 0
+&type 2 100 0 100
+&type 3 50 200 50
+&type
+&type The table should be sorted in ascending order, based upon the
+&type index number. The index number must be greater than or equal
+&type to zero. The values for red,green, and blue must be greater
+&type than or equal to zero, and less than 256.
+&type
+&type [response ' ']
+&type The following is a sample command dialog for add_transparent.aml
+&type
+&type Grid: &r add_transparent
+&type add_transparent.aml v1.0 started: 19 Jun 98 05:41:19 Friday
+&type usage:
+&type &r add_transparent [unquote '~']
+&type <outgrid> <base> <base.lut> <theme> <theme.lut>
+&type
+&type Grid: &r add_transparent visitor_buffer elev_cat elev_cat.lut
+&type buffer buffer.lut
+&type
+&type [response ' ']
+&type ===================================================
+&type Related amls
+&type ===================================================
+&type newrelief.aml is the final product of a family of aml functions which
+&type support creating painted relief backgrounds for data visualization and
+&type mapping.
+&type
+&type Related aml programs:
+&type
+&type add_opaque.aml
+&type balance_color.aml
+&type add_highlight.aml
+&type mar_surface.aml
+&type adjust_color.aml
+&type add_transparent.aml
+&type
+&type [response ' ']
+&type ===================================================
+&type newrelief.aml
+&type ===================================================
+&type The output of newrelief is a map that is a 3D representation of the
+&type drape theme. It essentially combines two maps. The second input grid
+&type <theme> is draped over the base map.
+&type
+&type Relief shows a change in elevation. To provide a more realistic landform
+&type potrayal, a pictoral method that imitates the way we see shapes and the
+&type interplay of light and dark, is used. This is called shaded relief or
+&type hill shading. Automated hill shading requires elevation data in the form
+&type of a digital elevation model. Hill shading is essentially a map of
+&type brightness differences resulting from incoming light being reflected to
+&type an observer. The assumption is that light is coming from a constant
+&type direction and elevation.
+&type
+&type [response ' ']
+&type
+&type A painted relief is essentially a shaded relief map colored according to
+&type the elevation color scheme and spatial distribution. The basic idea for
+&type processing painted relief is based on what is termed the "color behavior
+&type formula".
+&type
+&type P = A * I
+&type
+&type
+&type P = the shaded color value
+&type A = the color
+&type I = the percent illuminated
+&type
+&type Essentially, a color is true when illumination is 100 percent otherwise
+&type it is some percentage darker.
+&type
+&type [response ' ']
+&type
+&type In ArcInfo there is an RGB color model for thematic data such as
+&type elevation that is a mixture of red, green and blue. RGB values range
+&type from 0 - 255, using 24 bit color (8 bits each). Therefore, in theory,
+&type 64000000 colors are possible. This model is similar to color generated
+&type in a TV, for example. The colors are defined in an Ascii color map
+&type file which looks like:
+&type
+&type A colormap file should be of the format:
+&type
+&type index_number red green blue For example:
+&type
+&type 1 255 0 0
+&type 2 100 0 100
+&type 3 50 200 50
+&type
+&type The table should be sorted in ascending order, based upon the
+&type index number. The index number must be greater than or equal
+&type to zero. The values for red, green, and blue must be greater
+&type than or equal to zero, and less than 256.
+&type [response ' ']
+&type
+&type Thus, when the "Hillshade" command is run in ArcInfo, it converts
+&type the 8 bit output (0 - 255) to illumination values expressed as a
+&type percentage (0 - 10&type 0).
+&type
+&type A series of AMLs routines have been written that support the creation
+&type of a painted relief map. The most basic inputs are
+&type
+&type 1) a theme grid
+&type 2) a matching color map file
+&type 3) an illumination grid
+&type [response ' ']
+&type the output comprises
+&type
+&type 1) painted relief grid
+&type 2) a matching color map file
+&type [response ' ']
+&type AML Tools for creating "Painted Relief"
+&type Add_opaque.aml
+&type add_transparent.aml
+&type add_highlight.aml
+&type balance_color.aml
+&type adjust_color.aml
+&type
+&type Creating illumination grid
+&type mar_surface.aml
+&type
+&type Building painted relief
+&type newrelief.aml
+&type
+&type Each of the individual amls mentioned above are briefly discussed below.
+&type Further details on individual amls may be found in their help sections.
+&type [response ' ']
+&type ===================================================
+&type
+&type
+&type Add_highlight.aml- highlights one theme with another theme in an output
+&type grid and writes a color map file.
+&type
+&type To run - &r add_highlight <outgrid> <base> <base colorfile> <theme>
+&type [quote ~]
+&type <foreground|background> <brightness> <method>
+&type
+&type Example - &r add_highlight elev_cut elev_cat elev_cat.lut clearcuts
+&type foreground 50 add
+&type ===================================================
+&type
+&type add_opaque.aml - imbeds one theme in another in an output grid and
+&type writes a matching colormap file.
+&type
+&type To run - &r add_opaque <outgrid> <base> <base colorfile> <theme>~
+&type <theme colorfile>
+&type
+&type Example: &r add_opaque elev_wtr elev_cat elev_cat.lut water water.lut
+&type ===================================================
+&type [response ' ']
+&type
+&type add_transparent.aml - combines two themes transparently in an output
+&type grid, builds rgb fields in the info table, and writes a color map file.
+&type
+&type To run - &r add_transparent <outgrid> <grid1> <colormap1> <grid2>
+&type <colormap2>
+&type
+&type Example - &r add_transparent elev_buf elev_cat elev_cat.lut hiway_buff
+&type hi way_buff.lut
+&type ===================================================
+&type
+&type mar_surface.aml - adjusts surface values according to a theme and creates
+&type a new elevation grid and hillshade grid
+&type
+&type To run - &r mar_surface <elevation> <dgrid> <dvalue> <ddepth>~
+&type <outelev> {outhill}
+&type
+&type Example - &r mar_surface elev clearcuts 1 - 10 cut_elev cut_hill
+&type ===================================================
+&type [response ' ']
+&type
+&type Balance_color.aml- adjusts degree of color transparency on results of
+&type add_transparent.aml and writes a new color map file
+&type
+&type To run - &r balance_color <outgrid> <grid1> <grid2> ~
+&type <balance factor> <output colormap file>
+&type
+&type Example - &r balance_color elev_buf elev_cat elev_cat.lut
+&type -25 elevbuf25.lut
+&type ===================================================
+&type [response ' ']
+&type
+&type Adjust_color.aml - Adjusts color values in an ascii color mapfile
+&type and writes a new colormap file.
+&type
+&type To run - &r adjust_color <incolor.lut> <outcolor.lut> <brightness>
+&type <method>
+&type
+&type Example - &r adjust_color elev_buf.lut elev_add25.lut 25 add
+&type ===================================================
+&type
+&type Newrelief.aml - Builds a painted relief grid and ascii color map file
+&type based on
+&type input grid theme, a color map file and hillshade grid
+&type
+&type To run - &r newrelief <outgrid> <ingrid> <colormap file> <hillshade grid>
+&type
+&type Example - &r newrelief elev_hill clearcuts 1 - 10 cut_elev cut_hill
+&type ===================================================
+&type
+&type Example: Create a painted relief map showing :
+&type
+&type Hillshade, elevation categories, clearcuts, open water, roads,
+&type highway buffer
+&type zone and 3 km radius study area.
+&type [response ' ']
+&type
+&type The AML processing strategy :
+&type
+&type THEME NAME DISPLAY SURFACE
+&type
+&type Hillshade newrelief none
+&type Elev_cat opaque none
+&type Clearcuts highlight/foregrd 50 -10 m
+&type water opaque -10 m
+&type hiway_buf transparent +10 m
+&type roads opaque +5 m
+&type study area highlight/ backgrd -30 +25
+&type [response ' ']
+&goto end
+
+&type
+&type
+&type
+&label message
+&type grid %outgrid% exists...
+&type
+&goto usage
+
+&label message0
+&type
+&type program must be run from GRID...
+&type
+&goto usage
+
+&label message1
+&type grid %base% does not exist...
+&type
+&goto usage
+
+&label message2
+&type the colormap file %base.lut% does not exist...
+&type
+&goto usage
+
+&label message3
+&type grid %theme% does not exist...
+&type
+&goto usage
+
+
+&label usage
+&type usage: &r newrelief <outgrid> <base> <base.lut> <theme> <theme.lut>
+&goto end
+
+
+&label missing
+&type you are missing an argument...
+&type
+
+
+&goto usage
+
+&label end
+
+&label end
+&type newrelief.aml v%version% finished: [date -vfull]
+&type

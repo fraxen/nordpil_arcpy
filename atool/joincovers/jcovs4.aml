@@ -1,0 +1,126 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS- Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: JCOVS4.AML
+/*   Purpose: Allow user to specify operations to perform on coverages 
+/*            before they are joined. (build, clean)
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT   /*  {'position'} {'stripe'} {MODELESS | MODAL}
+/*-----------
+/* Initialize tool interface
+/*
+/* Set default tolerances
+&call DEFAULT
+
+&set position = [extract 1 [unquote %arglist%]]
+&set stripe   = [extract 2 [unquote %arglist%]]
+&set modality = [extract 3 [unquote %arglist%]]
+&if [null %position%] or %position%_ = #_ &then 
+  &set position = &cc &screen &cc
+&if [null %stripe%] or %stripe%_ = #_ &then 
+  &set stripe = JoinCovers - Step 4 of 5 - Topological Options
+&if [null %modality%] or %modality%_ = #_ &then
+  &set mode =
+&else
+  &if [translate %modality%] = MODAL &then
+    &set mode = &modal
+  &else
+    &set mode = 
+/*
+/* Issue thread delete self if thread depth = 2 and input is tty 
+&if [show &thread &depth] = 2 and [extract 1 [show &thread &stack]] = tty &then
+  &set launch = &thread &delete &self 
+&else 
+  &set launch
+/*
+&if [show &thread &exists tool$jcovs4] &then
+   &thread &delete tool$jcovs4
+&thread &create tool$jcovs4 %mode% ~
+  &menu jcovs4 ~
+  &position [unquote %position%] ~
+  &stripe [quote [unquote %stripe%]] ~
+  &pinaction '&run jcovs4 exit'
+%launch%
+/*
+&return
+
+/*--------------
+&routine DEFAULT
+/*--------------
+/* Read the first coverage to get default clean tolerances.
+&r file_get_record init %.jcovs1$filelist% 1 .joincovers$firstcover
+&describe %.joincovers$firstcover%
+&s .jcovs4$fuzzy %DSC$fuzzy%
+&s .jcovs4$dangle %DSC$dangle%
+&return
+
+/*-------------
+&routine UPDATE
+/*-------------
+&if %.jcovs4$intflag% &then
+  &s .jcovs4$buildflag .true.
+&return
+
+/*-----------
+&routine BACK
+/*-----------
+/* Go back to previous dialog.
+&s .joincovers$nextaml jcovs3 init
+&call EXIT
+&return
+
+/*-----------
+&routine NEXT
+/*-----------
+&run joincovers STEP4
+&s .joincovers$nextaml jcovs5 init
+&call EXIT
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: JCOVS4 INIT {'''position'''} {'''stripe'''} {MODELESS | MODAL}
+&type Usage
+&return &inform 
+
+/*-------------
+&routine CANCEL
+/*-------------
+&run joincovers CANCEL
+&if %.joincovers$cancel% &then
+  &call EXIT
+&return
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+/*&dv .jcovs4$*
+&if [show &thread &exists tool$jcovs4] &then 
+  &thread &delete tool$jcovs4
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+/* &call exit
+&return &warning An error has occurred in routine: %routine% (JCOVS4.AML).
+

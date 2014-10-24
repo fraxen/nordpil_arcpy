@@ -1,0 +1,103 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: FILE_GET_RECORD.AML
+/*   Purpose: Return the string at a specific record number in a file.
+/*
+/*--------------------------------------------------------------------------
+/*     Usage: FILE_GET_RECORD INIT <file> <record_number> <variable_name>
+/*
+/* Arguments:            file - ASCII file 
+/*              record_number - the file to append to <file> or {out_file}
+/*              variable_name - assigned string at that record, or null
+/*                              
+/*  Routines:    INIT - check args, setup loop
+/*               LOOP - loop through records, called by file_loop_aml
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling.
+/*
+/*   Globals: .file_get_record$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml
+/*--------------------------------------------------------------------------
+/*     Notes:
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+
+/* Extract args.
+&s file = [extract 1 [unquote %arglist%]]
+&s .file_get_record$rec = [extract 2 [unquote %arglist%]]
+&s .file_get_record$var = [extract 3 [unquote %arglist%]]
+
+/* Check arguments
+&if [null %file%] or [null %.file_get_record$rec%] or ~
+ [null %.file_get_record$var%] &then
+  &call usage
+
+&if [type %.file_get_record$rec%] ne -1 &then
+  &return <record_number> must be an integer.
+
+/* Verify file exist.
+&if not [exists %file% -file] &then
+  &return The file %file% does not exist.
+
+/* Start counter to keep track of records.
+&s .file_get_record$count = 1
+&s %.file_get_record$var%
+
+&run file_loop_aml %file% [quote file_get_record LOOP] ~
+  .file_get_record$looprecord
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+&if %.file_get_record$count% = %.file_get_record$rec% &then
+  &s %.file_get_record$var% = %.file_get_record$looprecord%
+&s .file_get_record$count = %.file_get_record$count% + 1
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: FILE_GET_RECORD INIT <file> <record_number> <variable_name>
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit  /* Comment out later?
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+

@@ -1,0 +1,440 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+DmsToDecimal	.\parsegps.py	/^def DmsToDecimal(degree_num, degree_den, minute_num, minute_den,$/;"	f
+EXIF	.\parsegps.py	/^import EXIF$/;"	i
+ExtentToFeatureclass	.\arcpy_startup.py	/^def ExtentToFeatureclass(fcName):$/;"	f
+GP	.\Duplicate_Mover.py	/^GP = arcgisscripting.create()$/;"	v
+GetGps	.\parsegps.py	/^def GetGps(data):$/;"	f
+Image	.\parsegps.py	/^import Image$/;"	i
+a_field	.\Duplicate_Mover.py	/^        a_field = None$/;"	v
+a_field	.\Duplicate_Mover.py	/^        a_field = fields.Next()$/;"	v
+a_field	.\Duplicate_Mover.py	/^a_field = fields.Next()$/;"	v
+actions	.\migrate.py	/^	actions = "feature,raster,table,metadata"$/;"	v
+actions	.\migrate.py	/^	actions = sys.argv[4]$/;"	v
+actions	.\migrate.py	/^actions = actions.split(",")$/;"	v
+actions2	.\migrate.py	/^actions2 = ["Featureclass migration","Raster migration", "Table listing", "MetaData migration"]$/;"	v
+actionsAll	.\migrate.py	/^actionsAll = "feature,raster,table,metadata".split(",")$/;"	v
+allData	.\extractwoa.py	/^allData ={}$/;"	v
+allData	.\recalcclr.py	/^allData={}$/;"	v
+allFields	.\fcfieldinfo.py	/^	allFields = arcpy.ListFields(dataset)$/;"	v
+allFiles	.\parsegps.py	/^allFiles = os.listdir(folder)$/;"	v
+allImages	.\parsegps.py	/^allImages = {}$/;"	v
+allKeys	.\parsegps.py	/^allKeys = allImages.keys()$/;"	v
+arcgisscripting	.\Duplicate_Mover.py	/^import arcgisscripting, sys$/;"	i
+arcgisscripting	.\arcsdeexport.py	/^import arcgisscripting, sys, re, os$/;"	i
+arcgisscripting	.\calculategridarea.py	/^import arcgisscripting, sys, os, math$/;"	i
+arcgisscripting	.\lsws.py	/^import arcgisscripting, sys, re, os$/;"	i
+arcgisscripting	.\medianice.py	/^import arcgisscripting$/;"	i
+arcgisscripting	.\migrate.py	/^import arcgisscripting$/;"	i
+arcgisscripting	.\projectpopden.py	/^import arcgisscripting$/;"	i
+arcpy	.\arcpy_startup.py	/^	import arcpy$/;"	i
+arcpy	.\countrysplit.py	/^import arcpy,sys,os,re$/;"	i
+arcpy	.\fcfieldinfo.py	/^import arcpy,sys,os,datetime$/;"	i
+arcpy	.\footprint.py	/^import arcpy,sys,os,datetime$/;"	i
+arcpy	.\rasteroutline.py	/^import arcpy$/;"	i
+argv	.\countrysplit.py	/^	argv = tuple(arcpy.GetParameterAsText(i)$/;"	v
+array	.\footprint.py	/^array = arcpy.Array()$/;"	v
+atexit	.\arcpy_startup.py	/^    import readline,atexit$/;"	i
+balDescStyle	.\popfix.py	/^balDescStyle = ""$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + '<BalloonStyle><text><![CDATA[\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + '<\/script>\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + ']]><\/text><\/BalloonStyle>\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'chart.draw(data, {colors: ["#60b0e0","#80FFFF"], isStacked: true, width: 450, height: 300, is3D: false, legend: "none", min: 0});\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.addColumn("number", "Population (historical)");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.addColumn("number", "Population (projected)");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.addColumn("string", "Year");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.addRows(21);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(0, 0, "1950");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(0, 1, 338.4);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(1, 0, "1955");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(1, 1, 390.8);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(10, 0, "2000");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(10, 1, 1228.0);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(11, 0, "2005");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(11, 1, 1349.5);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(12, 0, "2010");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(12, 2, 1398.2);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(13, 0, "2015");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(13, 2, 1473.4);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(14, 0, "2020");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(14, 2, 1595.1);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(15, 0, "2025");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(15, 2, 1711.5);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(16, 0, "2030");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(16, 2, 0.0);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(17, 0, "2035");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(17, 2, 0.0);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(18, 0, "2040");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(18, 2, 0.0);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(19, 0, "2045");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(19, 2, 0.0);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(2, 0, "1960");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(2, 1, 455.5);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(20, 0, "2050");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(20, 2, 1822.3);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(3, 0, "1965");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(3, 1, 528.7);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(4, 0, "1970");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(4, 1, 612.2);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(5, 0, "1975");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(5, 1, 696.0);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(6, 0, "1980");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(6, 1, 789.0);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(7, 0, "1985");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(7, 1, 881.9);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(8, 0, "1990");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(8, 1, 990.9);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(9, 0, "1995");\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'data.setValue(9, 1, 1100.8);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'function drawChart() {\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'google.load("visualization", "1", {packages:["columnchart"]});\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + 'google.setOnLoadCallback(drawChart);\\n'$/;"	v
+balDescStyle	.\popfix.py	/^balDescStyle = balDescStyle + '}\\n'$/;"	v
+balStyle	.\popfix.py	/^		balStyle = balStyle + 'data.setValue(' + str(i-1) + ', 1, $[pop' + str(i * 5 + 1945) +']\/1000);\\n'$/;"	v
+balStyle	.\popfix.py	/^		balStyle = balStyle + 'data.setValue(' + str(i-1) + ', 2, $[pop' + str(i * 5 + 1945) +']\/1000);\\n'$/;"	v
+balStyle	.\popfix.py	/^	balStyle = balStyle + 'data.setValue(' + str(i + 15) + ', 0, "' + str(i * 5 + 2025) + '");\\n'$/;"	v
+balStyle	.\popfix.py	/^	balStyle = balStyle + 'data.setValue(' + str(i + 15) + ', 2, 0);\\n'$/;"	v
+balStyle	.\popfix.py	/^	balStyle = balStyle + 'data.setValue(' + str(i-1) + ', 0, "' + str(i * 5 + 1945) + '");\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = ""$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + '<BalloonStyle><text><![CDATA[\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + '<\/script>\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + ']]><\/text><\/BalloonStyle>\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + 'chart.draw(data, {colors: ["#60b0e0","#80FFFF"], isStacked: true, width: 450, height: 300, is3D: false, legend: "none", min: 0});\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + 'data.addColumn("number", "Population (historical)");\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + 'data.addColumn("number", "Population (projected)");\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + 'data.addColumn("string", "Year");\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + 'data.addRows(21);\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + 'data.setValue(20, 0, "2050");\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + 'data.setValue(20, 2, $[pop2050]\/1000);\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + 'function drawChart() {\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + 'google.load("visualization", "1", {packages:["columnchart"]});\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + 'google.setOnLoadCallback(drawChart);\\n'$/;"	v
+balStyle	.\popfix.py	/^balStyle = balStyle + '}\\n'$/;"	v
+base	.\recalcclr.py	/^					base = allData[valueRange[valIndex+1]][color]$/;"	v
+base	.\recalcclr.py	/^					base = allData[valueRange[valIndex]][color]$/;"	v
+bkFolder	.\arcsdeexport.py	/^	bkFolder = sys.argv[1]$/;"	v
+call	.\arcsdeexport.py	/^from subprocess import call$/;"	i
+cellArea	.\calculategridarea.py	/^cellArea = cellSizeMeters * cellSizeMeters$/;"	v
+cellSizeMeters	.\calculategridarea.py	/^cellSizeMeters = float(gp.CellSize) * 111120$/;"	v
+cellSize_Geo	.\projectpopden.py	/^cellSize_Geo = "MAXOF"$/;"	v
+cellSize_PS	.\medianice.py	/^cellSize_PS = 1000$/;"	v
+cellSize_Result	.\projectpopden.py	/^cellSize_Result = 1000$/;"	v
+cellSizeinRad	.\calculategridarea.py	/^cellSizeinRad = float(gp.cellSize) * ((2*math.pi) \/360)$/;"	v
+checkDataset	.\migrate.py	/^					checkDataset = listTemp.next()$/;"	v
+checkDataset	.\migrate.py	/^				checkDataset = listTemp.next()$/;"	v
+cnxn	.\cru_normalization.py	/^cnxn = pyodbc.connect('DRIVER=MySQL ODBC 5.1 Driver;SERVER=localhost;DATABASE=cruts21;UID=root;PWD=AlGlut')$/;"	v
+cnxn	.\popfix.py	/^cnxn = pyodbc.connect('DRIVER={Microsoft Access Driver (*.mdb)};DBQ=C:\\\\mnt\\\\project\\\\3004 Azote\\\\graphics\\\\cities\\\\ws\\\\city.mdb')$/;"	v
+codecs	.\parsegps.py	/^import codecs$/;"	i
+col	.\extractwoa.py	/^		col = col + 1$/;"	v
+col	.\extractwoa.py	/^col = 180$/;"	v
+coord1	.\Duplicate_Mover.py	/^    coord1 = the_str[0:str_ind]$/;"	v
+coord2	.\Duplicate_Mover.py	/^    coord2 = the_str[0:str_ind]$/;"	v
+coords	.\parsegps.py	/^		coords = GetGps(headers)$/;"	v
+countrysplit	.\countrysplit.py	/^def countrysplit(paramInShape, paramField, paramOutShapePrefix='', paramWorkspace='', doSvg=False):$/;"	f
+curDoc	.\arcpy_startup.py	/^def curDoc():$/;"	f
+curExtent	.\arcpy_startup.py	/^def curExtent():$/;"	f
+curFrame	.\arcpy_startup.py	/^def curFrame():$/;"	f
+curProjection	.\arcpy_startup.py	/^def curProjection():$/;"	f
+currEp	.\parsegps.py	/^			currEp = allImages[allKeys[i]]['ep']$/;"	v
+currEp	.\parsegps.py	/^	currEp = ''$/;"	v
+cursor	.\cru_normalization.py	/^cursor = cnxn.cursor()$/;"	v
+cursor	.\popfix.py	/^cursor = cnxn.cursor()$/;"	v
+dataField	.\cru_normalization.py	/^				dataField = dataField + ',`M'+str(month)+'Y'+str(popYear)+'` bigint(20) NOT NULL'$/;"	v
+dataField	.\cru_normalization.py	/^		dataField = ""$/;"	v
+dataList	.\fcfieldinfo.py	/^dataList = arcpy.ListFeatureClasses()$/;"	v
+dataset	.\migrate.py	/^		dataset = listDataset.next()$/;"	v
+dataset	.\migrate.py	/^	dataset = listDataset.next()$/;"	v
+datasets	.\arcsdeexport.py	/^datasets = gp.ListFeatureClasses()$/;"	v
+datasets	.\arcsdeexport.py	/^datasets = gp.ListRasters()$/;"	v
+datasets	.\arcsdeexport.py	/^datasets = gp.ListTables()$/;"	v
+datasets	.\lsws.py	/^datasets = gp.ListFeatureClasses(pattern)$/;"	v
+datasets	.\lsws.py	/^datasets = gp.ListRasters(pattern)$/;"	v
+datasets	.\lsws.py	/^datasets = gp.ListTables(pattern)$/;"	v
+datetime	.\arcsdeexport.py	/^import time,datetime$/;"	i
+datetime	.\fcfieldinfo.py	/^import arcpy,sys,os,datetime$/;"	i
+datetime	.\footprint.py	/^import arcpy,sys,os,datetime$/;"	i
+dbDBserver	.\migrate.py	/^dbDBserver = pyodbc.connect('Driver={SQL Server};Server=db.grida.no;Database=sde;Uid=sde;Pwd=CinderCone;protocol=TCPIP')$/;"	v
+dbUtnes	.\migrate.py	/^dbUtnes = pyodbc.connect('Driver={SQL Server};Server=salomon.grida.no;Database=sde;Uid=sde;Pwd=CinderCone;protocol=TCPIP')$/;"	v
+desc	.\calculategridarea.py	/^desc = gp.describe(inGrid)$/;"	v
+earthRadius	.\calculategridarea.py	/^earthRadius = 6371$/;"	v
+endYear	.\cru_normalization.py	/^		endYear = int(Period.split('-')[1])$/;"	v
+env	.\arcpy_startup.py	/^	from arcpy import env$/;"	i
+env	.\rasteroutline.py	/^from arcpy import env$/;"	i
+ep	.\parsegps.py	/^ep={$/;"	v
+fc_prop	.\Duplicate_Mover.py	/^fc_prop = GP.Describe(the_fc)$/;"	v
+fc_prop	.\Duplicate_Mover.py	/^fc_prop = GP.Describe(the_out)$/;"	v
+featId	.\wdb2moss.py	/^			featId = "*****"$/;"	v
+featId	.\wdb2moss.py	/^		featId = "     -" + featId$/;"	v
+featId	.\wdb2moss.py	/^		featId = re.sub("segment (\\d+).*\\n",r"\\1",line)$/;"	v
+featPadding	.\wdb2moss.py	/^		featPadding = "                                        "$/;"	v
+featPadding	.\wdb2moss.py	/^		featPadding = featPadding[0:len(featPadding) - len(featRank) - len(featPointCount)]$/;"	v
+featPointCount	.\wdb2moss.py	/^		featPointCount = re.sub(".*points (\\d+)\\n",r"\\1",line) $/;"	v
+featRank	.\wdb2moss.py	/^		featRank = re.sub(".*rank (\\d+).*\\n",r"\\1",line)$/;"	v
+featureList	.\footprint.py	/^featureList = []$/;"	v
+fieldSheet	.\fcfieldinfo.py	/^fieldSheet = open(paramOutFile,'wb')$/;"	v
+fields	.\Duplicate_Mover.py	/^fields = GP.ListFields(the_out)$/;"	v
+folder	.\parsegps.py	/^folder = u"."$/;"	v
+frmla	.\Duplicate_Mover.py	/^            frmla = 1$/;"	v
+frmla	.\Duplicate_Mover.py	/^            frmla = frmla + 1$/;"	v
+frmla	.\Duplicate_Mover.py	/^        frmla = 1$/;"	v
+frmla	.\Duplicate_Mover.py	/^frmla = 0$/;"	v
+fromSDE	.\migrate.py	/^	fromSDE = "Database Connections\/" + sys.argv[1] + "\/"$/;"	v
+fromSDE	.\migrate.py	/^	fromSDE = "Database Connections\/world_geo.sde\/"$/;"	v
+gPing	.\arcpy_startup.py	/^def gPing(msg,isArc = 0):$/;"	f
+geom	.\Duplicate_Mover.py	/^            geom = the_row.GetValue(shp_fld)$/;"	v
+geom	.\Duplicate_Mover.py	/^    geom = the_row.GetValue(shp_fld)$/;"	v
+getUniqueValues	.\countrysplit.py	/^def getUniqueValues(shapeFile,field):$/;"	f
+gp	.\arcsdeexport.py	/^gp = arcgisscripting.create(9.3)$/;"	v
+gp	.\calculategridarea.py	/^gp = arcgisscripting.create(9.3)$/;"	v
+gp	.\lsws.py	/^gp = arcgisscripting.create(9.3)$/;"	v
+gp	.\medianice.py	/^gp = arcgisscripting.create(9.3)$/;"	v
+gp	.\migrate.py	/^gp = arcgisscripting.create()$/;"	v
+gp	.\projectpopden.py	/^gp = arcgisscripting.create(9.3)$/;"	v
+gridCols	.\extractwoa.py	/^gridCols = 360$/;"	v
+gridRows	.\extractwoa.py	/^gridRows = 180$/;"	v
+halfCellWidth	.\calculategridarea.py	/^halfCellWidth = float(cellSizeMeters) \/ 2$/;"	v
+halfaDeginRad	.\calculategridarea.py	/^halfaDeginRad = 0.00872664625$/;"	v
+headers	.\parsegps.py	/^		headers = EXIF.process_file(thisFile, 'UNDEF', False, False, False)$/;"	v
+heightFactor	.\popfix.py	/^heightFactor = 100$/;"	v
+ignoreFields	.\cru_normalization.py	/^				ignoreFields = ignoreFields + ',M' + str(month) + 'Y'+ str(popYear)$/;"	v
+ignoreFields	.\cru_normalization.py	/^		ignoreFields = "id"$/;"	v
+imgSize	.\parsegps.py	/^		imgSize = Image.open(i).size$/;"	v
+inFile	.\extractwoa.py	/^	inFile = sys.argv[1]$/;"	v
+inFile	.\recalcclr.py	/^	inFile = sys.argv[1]$/;"	v
+inGrid	.\calculategridarea.py	/^	inGrid = sys.argv[1].replace('\\\\','\\\\\\\\')$/;"	v
+inLevels	.\extractwoa.py	/^inLevels = 33$/;"	v
+inRaster	.\rasteroutline.py	/^	inRaster = sys.argv[1]$/;"	v
+inputFile	.\extractwoa.py	/^inputFile = open(inFile, "r")$/;"	v
+inputFile	.\recalcclr.py	/^inputFile = open(inFile, "r")$/;"	v
+isArcMap	.\arcpy_startup.py	/^def isArcMap():$/;"	f
+isArcMap	.\footprint.py	/^	isArcMap = False$/;"	v
+isArcMap	.\footprint.py	/^isArcMap = True$/;"	v
+is_number	.\arcpy_startup.py	/^def is_number(s):$/;"	f
+iteration	.\fcfieldinfo.py	/^	iteration = iteration + 1$/;"	v
+iteration	.\fcfieldinfo.py	/^iteration = 0$/;"	v
+last_x	.\Duplicate_Mover.py	/^    last_x = the_x$/;"	v
+last_x	.\Duplicate_Mover.py	/^last_x = None$/;"	v
+last_y	.\Duplicate_Mover.py	/^    last_y = the_y$/;"	v
+last_y	.\Duplicate_Mover.py	/^last_y = None$/;"	v
+lat	.\popfix.py	/^		lat = abs(row.Latitude * (2 * math.pi)\/360)$/;"	v
+listDataset	.\migrate.py	/^	listDataset = gp.ListFeatureClasses(pattern)$/;"	v
+listDataset	.\migrate.py	/^	listDataset = gp.ListRasters(pattern)$/;"	v
+listDataset	.\migrate.py	/^	listDataset = gp.listtables(pattern)$/;"	v
+listTemp	.\migrate.py	/^				listTemp = gp.ListRasters("*")$/;"	v
+longlen	.\popfix.py	/^		longlen = (p1 * math.cos(lat)) + (p2 * math.cos(3 * lat)) + (p3 * math.cos(5 * lat))$/;"	v
+m1	.\popfix.py	/^m1 = 111132.92		# latitude calculation term 1$/;"	v
+m2	.\popfix.py	/^m2 = -559.82		# latitude calculation term 2$/;"	v
+m3	.\popfix.py	/^m3 = 1.175			# latitude calculation term 3$/;"	v
+m4	.\popfix.py	/^m4 = -0.0023		# latitude calculation term 4$/;"	v
+math	.\calculategridarea.py	/^import arcgisscripting, sys, os, math$/;"	i
+math	.\popfix.py	/^import math$/;"	i
+max	.\recalcclr.py	/^					max = allData[valueRange[valIndex+1]][color]$/;"	v
+max	.\recalcclr.py	/^					max = allData[valueRange[valIndex]][color]$/;"	v
+mossFile	.\wdb2moss.py	/^mossFile = open(sys.argv[2], "w")$/;"	v
+mov_dist	.\Duplicate_Mover.py	/^    mov_dist = the_dist * mov_fac$/;"	v
+mov_fac	.\Duplicate_Mover.py	/^            mov_fac = mov_fac + 1$/;"	v
+mov_fac	.\Duplicate_Mover.py	/^        mov_fac = 1$/;"	v
+mov_fac	.\Duplicate_Mover.py	/^mov_fac = 0$/;"	v
+new_x	.\Duplicate_Mover.py	/^            new_x = float(new_x)$/;"	v
+new_x	.\Duplicate_Mover.py	/^            new_x = the_str[0:str_ind]$/;"	v
+new_y	.\Duplicate_Mover.py	/^            new_y = float(new_y)$/;"	v
+new_y	.\Duplicate_Mover.py	/^            new_y = the_str[str_ind + 1:len(the_str)]$/;"	v
+nextFile	.\parsegps.py	/^		nextFile = allImages[allKeys[0]]['id']$/;"	v
+nextFile	.\parsegps.py	/^		nextFile = allImages[allKeys[i+1]]['id']$/;"	v
+numSteps	.\recalcclr.py	/^numSteps = 100$/;"	v
+numpy	.\arcpy_startup.py	/^import numpy $/;"	i
+okay	.\Duplicate_Mover.py	/^okay = okay.upper()$/;"	v
+okay	.\Duplicate_Mover.py	/^okay = raw_input("ENTER Y FOR YES OR N FOR NO: ")$/;"	v
+oneDeginRad	.\calculategridarea.py	/^oneDeginRad = 0.0174532925$/;"	v
+os	.\arcpy_startup.py	/^import os$/;"	i
+os	.\arcsdeexport.py	/^import arcgisscripting, sys, re, os$/;"	i
+os	.\calculategridarea.py	/^import arcgisscripting, sys, os, math$/;"	i
+os	.\countrysplit.py	/^import arcpy,sys,os,re$/;"	i
+os	.\cru_normalization.py	/^import os$/;"	i
+os	.\extractwoa.py	/^﻿import sys,os$/;"	i
+os	.\fcfieldinfo.py	/^import arcpy,sys,os,datetime$/;"	i
+os	.\footprint.py	/^import arcpy,sys,os,datetime$/;"	i
+os	.\lsws.py	/^import arcgisscripting, sys, re, os$/;"	i
+os	.\migrate.py	/^import os$/;"	i
+os	.\parsegps.py	/^import sys,os$/;"	i
+os	.\rasteroutline.py	/^import os$/;"	i
+os	.\recalcclr.py	/^﻿import sys,os$/;"	i
+outCS	.\medianice.py	/^outCS = "Y:\/config\/Application Data\/ESRI\/ArcMap\/Coordinate Systems\/Arctic LAEA Greenwich.prj"$/;"	v
+outColor	.\recalcclr.py	/^			outColor = [0,0,0]$/;"	v
+outColor	.\recalcclr.py	/^			outColor = allData[valueRange[valIndex+1]]$/;"	v
+outColor	.\recalcclr.py	/^		outColor = allData[valueRange[valIndex]]$/;"	v
+outFile	.\extractwoa.py	/^		outFile = 'outgrid'$/;"	v
+outFile	.\extractwoa.py	/^		outFile = sys.argv[2]$/;"	v
+outFile	.\parsegps.py	/^outFile = codecs.open ('out.kml',encoding='utf-8', mode='w')$/;"	v
+outFile	.\recalcclr.py	/^	outFile = inFile.split(".")[0] + "_recalc.clr"$/;"	v
+outGDB	.\arcsdeexport.py	/^outGDB = bkFolder + '\/'+ sdeDatabase + '.gdb'$/;"	v
+outGrid	.\calculategridarea.py	/^	outGrid = sys.argv[2].replace('\\\\','\\\\\\\\')$/;"	v
+outPoly	.\rasteroutline.py	/^			outPoly = re.sub(r'(.*?)\\d+$',r'\\1',inRaster) + str(int(re.sub(r'.*?(\\d+$)',r'\\1',inRaster)) +1)$/;"	v
+outPoly	.\rasteroutline.py	/^		outPoly = sys.argv[2]$/;"	v
+outQueue	.\extractwoa.py	/^		outQueue = outQueue + str(allData[row][col-1]) + ' '$/;"	v
+outQueue	.\extractwoa.py	/^	outQueue = ''$/;"	v
+outputFile	.\extractwoa.py	/^outputFile = open(outFile, "w")$/;"	v
+outputFile	.\popfix.py	/^outputFile = open("popfix.kml", "w")$/;"	v
+outputFile	.\recalcclr.py	/^outputFile = open(outFile, "w")$/;"	v
+p1	.\popfix.py	/^p1 = 111412.84		# longitude calculation term 1$/;"	v
+p2	.\popfix.py	/^p2 = -93.5			# longitude calculation term 2$/;"	v
+p3	.\popfix.py	/^p3 = 0.118			# longitude calculation term 3$/;"	v
+paramInRaster	.\footprint.py	/^paramInRaster = arcpy.GetParameterAsText(0)$/;"	v
+paramOutFile	.\fcfieldinfo.py	/^	paramOutFile = arcpy.env.workspace + '\/fieldinfo_%s.xls' % datetime.datetime.now().strftime("%Y%m%d-%H%M")$/;"	v
+paramOutFile	.\fcfieldinfo.py	/^	paramOutFile = paramOutFile + '.xls'$/;"	v
+paramOutFile	.\fcfieldinfo.py	/^paramOutFile = arcpy.GetParameterAsText(1)$/;"	v
+paramOutFile	.\footprint.py	/^		paramOutFile = paramInRaster.split('.')[:-1][0] + '_footprint.shp'$/;"	v
+paramOutFile	.\footprint.py	/^	paramOutFile = paramInRaster + '_footprint.shp'$/;"	v
+paramOutFile	.\footprint.py	/^	paramOutFile = paramOutFile + '.shp'$/;"	v
+paramOutFile	.\footprint.py	/^paramOutFile = paramOutShape$/;"	v
+paramOutShape	.\footprint.py	/^paramOutShape = arcpy.GetParameterAsText(1)$/;"	v
+paramWildcard	.\fcfieldinfo.py	/^paramWildcard = arcpy.GetParameterAsText(2)$/;"	v
+paramWorkspace	.\fcfieldinfo.py	/^	paramWorkspace = arcpy.env.workspace$/;"	v
+paramWorkspace	.\fcfieldinfo.py	/^paramWorkspace = arcpy.GetParameterAsText(0)$/;"	v
+paramWorkspace	.\footprint.py	/^	paramWorkspace = arcpy.env.workspace$/;"	v
+paramWorkspace	.\footprint.py	/^paramWorkspace = arcpy.GetParameterAsText(2)$/;"	v
+pattern	.\lsws.py	/^		pattern = "*"$/;"	v
+pattern	.\lsws.py	/^		pattern = sys.argv[2]$/;"	v
+pattern	.\migrate.py	/^	pattern = "*"$/;"	v
+pattern	.\migrate.py	/^	pattern = sys.argv[3]$/;"	v
+performExport	.\countrysplit.py	/^def performExport(uniques, shapeFile, exportPrefix, field, doSvg):$/;"	f
+point	.\footprint.py	/^point = arcpy.Point()$/;"	v
+polygon	.\footprint.py	/^polygon = arcpy.Polygon(array)$/;"	v
+popThisYear	.\popfix.py	/^		popThisYear = row.pop2025 + ((row.pop2050 - row.pop2025) \/ 25) * (int(popYear) - 2025)$/;"	v
+popYear	.\cru_normalization.py	/^			popYear = str(popYear)$/;"	v
+prevFile	.\parsegps.py	/^	prevFile = {False: allImages[allKeys[len(allKeys)-1]]['id'], True: allImages[allKeys[i-1]]['id']}[i>0]$/;"	v
+propsInRaster	.\footprint.py	/^propsInRaster = arcpy.Describe(paramInRaster)$/;"	v
+pyodbc	.\cru_normalization.py	/^import pyodbc$/;"	i
+pyodbc	.\migrate.py	/^import pyodbc$/;"	i
+pyodbc	.\popfix.py	/^import pyodbc$/;"	i
+pyreadline	.\arcpy_startup.py	/^    import pyreadline.rlmain$/;"	i
+pyreadline	.\arcpy_startup.py	/^    import pyreadline.unicode_helper$/;"	i
+re	.\arcsdeexport.py	/^import arcgisscripting, sys, re, os$/;"	i
+re	.\countrysplit.py	/^import arcpy,sys,os,re$/;"	i
+re	.\lsws.py	/^import arcgisscripting, sys, re, os$/;"	i
+re	.\migrate.py	/^import re$/;"	i
+re	.\rasteroutline.py	/^import re$/;"	i
+re	.\wdb2moss.py	/^import re,sys$/;"	i
+readline	.\arcpy_startup.py	/^    import readline,atexit$/;"	i
+rlcompleter	.\arcpy_startup.py	/^    import rlcompleter$/;"	i
+rlmain	.\arcpy_startup.py	/^    import pyreadline.rlmain$/;"	i
+round_figures	.\recalcclr.py	/^def round_figures(x, n):$/;"	f
+row	.\extractwoa.py	/^row = 181$/;"	v
+sdeDatabase	.\arcsdeexport.py	/^	sdeDatabase = sys.argv[2]$/;"	v
+shortDatasetName	.\migrate.py	/^			shortDatasetName = re.sub("[^\\.]+\\.[^\\.]+\\.","",dataset,1).upper()$/;"	v
+shortDatasetName	.\migrate.py	/^		shortDatasetName = re.sub("[^\\.]+\\.[^\\.]+\\.","",dataset,1).upper()$/;"	v
+shp_fld	.\Duplicate_Mover.py	/^shp_fld = fc_prop.ShapeFieldName$/;"	v
+startYear	.\cru_normalization.py	/^		startYear = int(Period.split('-')[0])$/;"	v
+step	.\recalcclr.py	/^step = (valueRange[len(valueRange)-1] - valueRange[0]) \/ numSteps$/;"	v
+stepRange	.\recalcclr.py	/^				stepRange = val - valueRange[valIndex]$/;"	v
+str_ind	.\Duplicate_Mover.py	/^            str_ind = the_str.find("_")$/;"	v
+str_ind	.\Duplicate_Mover.py	/^    str_ind = the_str.find("_")$/;"	v
+str_ind	.\Duplicate_Mover.py	/^    str_ind = the_str.find("_", str_ind + 1)$/;"	v
+subprocess	.\arcpy_startup.py	/^import subprocess$/;"	i
+subprocess	.\cru_normalization.py	/^import subprocess$/;"	i
+sumString	.\medianice.py	/^		sumString = sumString + "con(ISNULL(" + thisGrid + "),0,1) + "$/;"	v
+sumString	.\medianice.py	/^	sumString = ""$/;"	v
+sys	.\Duplicate_Mover.py	/^import arcgisscripting, sys$/;"	i
+sys	.\arcpy_startup.py	/^import sys$/;"	i
+sys	.\arcsdeexport.py	/^import arcgisscripting, sys, re, os$/;"	i
+sys	.\calculategridarea.py	/^import arcgisscripting, sys, os, math$/;"	i
+sys	.\countrysplit.py	/^import arcpy,sys,os,re$/;"	i
+sys	.\extractwoa.py	/^﻿import sys,os$/;"	i
+sys	.\fcfieldinfo.py	/^import arcpy,sys,os,datetime$/;"	i
+sys	.\footprint.py	/^import arcpy,sys,os,datetime$/;"	i
+sys	.\lsws.py	/^import arcgisscripting, sys, re, os$/;"	i
+sys	.\migrate.py	/^import sys$/;"	i
+sys	.\parsegps.py	/^import sys,os$/;"	i
+sys	.\rasteroutline.py	/^import sys$/;"	i
+sys	.\recalcclr.py	/^﻿import sys,os$/;"	i
+sys	.\wdb2moss.py	/^import re,sys$/;"	i
+temp1	.\rasteroutline.py	/^temp1 = CreateConstantRaster(1,"INTEGER", Raster(inRaster).meanCellHeight, Raster(inRaster).extent)$/;"	v
+tempName	.\migrate.py	/^						tempName = re.sub("[^\\.]+\\.[^\\.]+\\.","",checkDataset,1).upper()$/;"	v
+tempName	.\migrate.py	/^			tempName = "_A"$/;"	v
+tempWs	.\calculategridarea.py	/^tempWs = os.environ["temp"]$/;"	v
+the_cur	.\Duplicate_Mover.py	/^the_cur = GP.SearchCursor(the_out)$/;"	v
+the_cur	.\Duplicate_Mover.py	/^the_cur = GP.UpdateCursor(the_out)$/;"	v
+the_dist	.\Duplicate_Mover.py	/^the_dist = 20$/;"	v
+the_dups	.\Duplicate_Mover.py	/^the_dups = [""]$/;"	v
+the_fc	.\Duplicate_Mover.py	/^the_fc = "C:\\\\temp_work\\\\test_duplicates\\\\the_gdb.gdb\\\\as_gdb"$/;"	v
+the_id	.\Duplicate_Mover.py	/^    the_id = long(the_str[str_ind + 1: len(the_str)])$/;"	v
+the_id	.\Duplicate_Mover.py	/^    the_id = the_row.GetValue(uid)$/;"	v
+the_ids	.\Duplicate_Mover.py	/^the_ids = [""]$/;"	v
+the_index	.\Duplicate_Mover.py	/^            the_index = len(the_ids)$/;"	v
+the_index	.\Duplicate_Mover.py	/^        the_index = the_index + 1$/;"	v
+the_index	.\Duplicate_Mover.py	/^    the_index = 0$/;"	v
+the_index	.\Duplicate_Mover.py	/^    the_index = the_index + 1$/;"	v
+the_index	.\Duplicate_Mover.py	/^the_index = 0$/;"	v
+the_index	.\Duplicate_Mover.py	/^the_index = 1$/;"	v
+the_list	.\Duplicate_Mover.py	/^the_list = [""]$/;"	v
+the_out	.\Duplicate_Mover.py	/^the_out = "friday"$/;"	v
+the_part	.\Duplicate_Mover.py	/^            the_part = geom.GetPart()$/;"	v
+the_part	.\Duplicate_Mover.py	/^    the_part = geom.GetPart()$/;"	v
+the_row	.\Duplicate_Mover.py	/^    the_row = the_cur.Next()$/;"	v
+the_row	.\Duplicate_Mover.py	/^the_row = the_cur.Next()$/;"	v
+the_str	.\Duplicate_Mover.py	/^            the_str = the_dups[the_index]$/;"	v
+the_str	.\Duplicate_Mover.py	/^    the_str = str(the_part.x) + "_" + str(the_part.y) + "_" + str(the_id)$/;"	v
+the_str	.\Duplicate_Mover.py	/^    the_str = the_dups[the_index]$/;"	v
+the_str	.\Duplicate_Mover.py	/^    the_str = the_list[the_index - 1]$/;"	v
+the_str	.\Duplicate_Mover.py	/^    the_str = the_list[the_index]$/;"	v
+the_ws	.\Duplicate_Mover.py	/^the_ws = "C:\\\\temp_work\\\\test_duplicates\\\\the_gdb.gdb"$/;"	v
+the_x	.\Duplicate_Mover.py	/^        the_x = the_x + mov_dist$/;"	v
+the_x	.\Duplicate_Mover.py	/^        the_x = the_x - mov_dist$/;"	v
+the_x	.\Duplicate_Mover.py	/^    the_x = float(the_x)$/;"	v
+the_x	.\Duplicate_Mover.py	/^    the_x = the_str[0:str_ind]$/;"	v
+the_y	.\Duplicate_Mover.py	/^        the_y = the_y + mov_dist$/;"	v
+the_y	.\Duplicate_Mover.py	/^        the_y = the_y - mov_dist$/;"	v
+the_y	.\Duplicate_Mover.py	/^    the_y = float(the_y)$/;"	v
+the_y	.\Duplicate_Mover.py	/^    the_y = the_str[str_ind + 1:len(the_str)]$/;"	v
+thisData	.\extractwoa.py	/^	thisData = inputFile.readline()$/;"	v
+thisData	.\extractwoa.py	/^thisData = inputFile.readline()$/;"	v
+thisData	.\recalcclr.py	/^thisData = inputFile.readline() # first line is just the header, ignore that$/;"	v
+thisData	.\recalcclr.py	/^thisData = inputFile.readline()$/;"	v
+thisFile	.\parsegps.py	/^		thisFile = open(".\/" + i,"rb")$/;"	v
+thisGrid	.\medianice.py	/^		thisGrid = "ice" + str(year) + month + "_3"$/;"	v
+thisImage	.\parsegps.py	/^		thisImage = allImages[allKeys[i]]$/;"	v
+thisImage	.\parsegps.py	/^		thisImage = {}$/;"	v
+thisImage	.\parsegps.py	/^	thisImage = allImages[allKeys[i]]$/;"	v
+thisImage	.\parsegps.py	/^thisImage = {}$/;"	v
+thisMxd	.\footprint.py	/^	thisMxd = arcpy.mapping.MapDocument("CURRENT")$/;"	v
+thisStamp	.\parsegps.py	/^		thisStamp = time.strptime(headers['EXIF DateTimeOriginal'].__str__(),"%Y:%m:%d %H:%M:%S")$/;"	v
+thisStamp	.\parsegps.py	/^thisStamp = time.strptime('2010:09:25 17:25:00','%Y:%m:%d %H:%M:%S')$/;"	v
+thisStamp	.\parsegps.py	/^thisStamp = time.strptime('2010:09:26 14:50:58','%Y:%m:%d %H:%M:%S')$/;"	v
+thisStamp	.\parsegps.py	/^thisStamp = time.strptime('2010:09:26 15:12:34','%Y:%m:%d %H:%M:%S')$/;"	v
+thisStamp	.\parsegps.py	/^thisStamp = time.strptime('2010:09:26 15:12:58','%Y:%m:%d %H:%M:%S')$/;"	v
+thisTile	.\projectpopden.py	/^	thisTile = tile[0]$/;"	v
+thisVal	.\extractwoa.py	/^			thisVal = -9999$/;"	v
+thisVal	.\extractwoa.py	/^			thisVal = int(round(thisVal * 100,0))$/;"	v
+thisVal	.\extractwoa.py	/^		thisVal = float(thisData[8*rowVal:7+8*rowVal].strip())$/;"	v
+thisWorkspace	.\calculategridarea.py	/^		thisWorkspace = gp.Workspace$/;"	v
+thisWorkspace	.\calculategridarea.py	/^		thisWorkspace = sys.argv[3].replace('\\\\','\\\\\\\\')$/;"	v
+thisWorkspace	.\lsws.py	/^	thisWorkspace = sys.argv[1].replace('\\\\','\/')$/;"	v
+thisYear	.\medianice.py	/^		thisYear = str(year)$/;"	v
+tiles	.\projectpopden.py	/^tiles = [['nw', '-180 40 -85 90'], ['sw','-90 40 5 90'],['se','-5 40 95 90'],['ne','85 40 180 90']]$/;"	v
+time	.\arcpy_startup.py	/^import time $/;"	i
+time	.\arcsdeexport.py	/^import time,datetime$/;"	i
+time	.\parsegps.py	/^import time$/;"	i
+toSDE	.\migrate.py	/^	toSDE = "Database Connections\/" + sys.argv[2] + "\/"$/;"	v
+toSDE	.\migrate.py	/^	toSDE = "Database Connections\/europe_emep.sde\/"$/;"	v
+uid	.\Duplicate_Mover.py	/^        uid = "FID"$/;"	v
+uid	.\Duplicate_Mover.py	/^        uid = "OBJECTID"$/;"	v
+unicode_helper	.\arcpy_startup.py	/^    import pyreadline.unicode_helper$/;"	i
+updateMetadata	.\migrate.py	/^	def updateMetadata(listDset,dataType):$/;"	f
+val	.\recalcclr.py	/^			val = valueRange[valIndex+1]$/;"	v
+val	.\recalcclr.py	/^		val = val + (valueRange[valIndex+1] - valueRange[valIndex])\/(numSteps\/(len(valueRange)-1))$/;"	v
+val	.\recalcclr.py	/^val = valueRange[0]$/;"	v
+valIndex	.\recalcclr.py	/^valIndex = 0$/;"	v
+valRange	.\recalcclr.py	/^				valRange = valueRange[valIndex+1] - valueRange[valIndex]$/;"	v
+valueRange	.\recalcclr.py	/^valueRange = allData.keys()$/;"	v
+wdbFile	.\wdb2moss.py	/^wdbFile = open(sys.argv[1], "r")$/;"	v
+widthFactor	.\popfix.py	/^widthFactor = 0.2$/;"	v
+xSize	.\parsegps.py	/^			xSize = 500 * thisImage['xSize'] \/ thisImage['ySize']$/;"	v
+xSize	.\parsegps.py	/^			xSize = 500$/;"	v
+xWidth	.\popfix.py	/^		xWidth = widthFactor * (111319.458 \/ longlen)$/;"	v
+xWidth	.\popfix.py	/^xWidth = widthFactor * 60 * 1852 # number of meters in widthFactor$/;"	v
+ySize	.\parsegps.py	/^			ySize = 500 * thisImage['ySize'] \/ thisImage['xSize']$/;"	v
+ySize	.\parsegps.py	/^			ySize = 500$/;"	v

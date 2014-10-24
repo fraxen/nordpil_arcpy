@@ -1,0 +1,14 @@
+&ARGS strCoverage
+/* VAT2TXT ROUTINE {{{
+/* 	Takes a vat file and dumps it to a text file
+	&ECHO &OFF
+	TABLES
+		&ECHO &ON
+		SELECT %strCoverage%.vat
+		UNLOAD %strCoverage%.csv
+	Q
+/* }}}
+
+
+
+

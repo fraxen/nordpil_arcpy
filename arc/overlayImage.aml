@@ -1,0 +1,171 @@
+/* {{{ COMMENTS
+/* overlayImage.aml
+/* Hugo Ahlenius, UNEP/GRID-ARendal
+/* Last Modified: 2004-Jan-15 20:21 (HA)
+/*
+/* I take two images and overlays them where the specified color is set.
+/* The images should be rgb, and are converted to stacks
+/*
+/* HISTORY
+/* 2004-Jan-13 -- Created the file(HA)
+/* 2004-Jan-15 -- FIxed a coordinate problem(HA)
+/* }}} 
+
+&ARGS topImage bgImage outImage col1 col2 col3 numOfTiles doDebug
+&SETVAR thisFile = [BEFORE %AML$FILE% '.aml']
+&SETVAR Usage = overlayimage topImage bgImage outImageName col1 col2 col3 {numOfTiles}    (images are absolute paths to images of the same dimensions, the rgb color specification is the color in the top image that will use the bg image. Note: Make sure they don't have worldfiles, or if they do that they match. numOfTiles defaults to 4)
+&SETVAR useTempWS = .TRUE.
+
+/* {{{ DEBUG ARGS
+	&IF NOT [NULL %doDebug%] &THEN &ECHO &ON
+/* }}} 
+
+/* {{{ STANDARD BLOCK
+	&SEVERITY &ERROR &ROUTINE bailout
+	&SETVAR doCW = .TRUE.
+	&SETVAR hasWindows = .FALSE.
+	&IF "[BEFORE [SHOW &OS] ,]" eq "Windows_NT" &THEN &SETVAR hasWindows = .TRUE.
+	&IF %hasWindows% &THEN &DO
+		&WATCH %TEMP%\%thisFile%.log
+		&AMLPATH %home%/aml
+		&ATOOL %home%/aml
+		&SETVAR dirchar = \
+		&END 
+	&ELSE &DO
+		&WATCH %TEMP%/%thisFile%.log
+		&AMLPATH ~/aml
+		&ATOOL ~/aml
+		&SETVAR dirchar = /
+	&END
+	&PT &ON
+	&SYSTEM timer start
+	dataset disconnect connUtnes
+
+	/* {{{ CREATE WS
+	&IF %doCW% & %useTempWS% &THEN &DO /* If run with debug args
+		&if [EXISTS tempws_%thisFile% -workspace] &THEN rm -r -f tempws_%thisFile%
+		cw tempws_%thisFile%
+	&END
+	w tempws_%thisFile%
+	/* }}} 
+/* }}}
+
+/* {{{ SETUP WORK ENVIRONMENT
+	&IF [NULL %topImage%] | [NULL %bgImage%] | [NULL %col1%] | [NULL %col2%] | [NULL %col3%] &THEN &GOTO USAGE
+	&IF [NULL %outImage%] &THEN &SETVAR outImage = outImage
+	&IF [NULL %numOfTiles%] &THEN &SETVAR numOfTiles = 4
+/* }}} 
+
+/* ACTUAL CODE STARTS HERE ----------------------------
+
+/* Convert the images to stacks
+IMAGEGRID %topImage% topS1 topS.color
+IMAGEGRID %bgImage% bgS1 bgS.color
+
+&DO thisGrid &LIST topS, bgS
+	/* If the image was indexed/not RGB then do this
+	&IF NOT [EXISTS %thisGrid%1C1 -grid] &THEN &DO
+		&SYSTEM cat %thisGrid%.color | sed "s/\(.*\) \(.*\) \(.*\) \(.*\)/\1: \2/" | tee %thisGrid%C1.color
+		&SYSTEM cat %thisGrid%.color | sed "s/\(.*\) \(.*\) \(.*\) \(.*\)/\1: \3/" | tee %thisGrid%C2.color
+		&SYSTEM cat %thisGrid%.color | sed "s/\(.*\) \(.*\) \(.*\) \(.*\)/\1: \4/" | tee %thisGrid%C3.color
+		GRID
+			%thisGrid%1C1 = RECLASS (%thisGrid%1, %thisGrid%C1.color)
+			%thisGrid%1C2 = RECLASS (%thisGrid%1, %thisGrid%C2.color)
+			%thisGrid%1C3 = RECLASS (%thisGrid%1, %thisGrid%C3.color)
+			KILL %thisGrid%1
+			MAKESTACK %thisGrid%1 LIST %thisGrid%1C1 %thisGrid%1C2 %thisGrid%1C3
+		QUIT
+	&END
+&END
+
+GRID
+	&DESCRIBE tops1c1
+	&SETVAR fullXmin = [ROUND %GRD$XMIN%]
+	&SETVAR fullXmax = [ROUND %GRD$XMAX%]
+	&SETVAR fullYmin = [ROUND %GRD$YMIN%]
+	&SETVAR fullYmax = [ROUND %GRD$YMAX%]
+	&SETVAR fullWidth = [CALC %fullXmax% - %fullXmin%]
+	&SETVAR fullHeight = [CALC %fullYmax% - %fullYmin%]
+	&SETVAR thisXOverlap = [CALC [ROUND [CALC [CALC %GRD$NCols% * 0.02 * %GRD$DX%] / %GRD$DX%]] * %GRD$DX%]
+	&SETVAR thisYOverlap = [CALC [ROUND [CALC [CALC %GRD$NRows% * 0.02 * %GRD$DY%] / %GRD$DX%]] * %GRD$DX%]
+	&SETVAR tileWidth = [CALC [ROUND [CALC [CALC %fullWidth% / [SQRT %numOfTiles%]] / %GRD$DX%]] * %GRD$DX%]
+	&SETVAR tileHeight = [CALC [ROUND [CALC [CALC %fullHeight% / [SQRT %numOfTiles%]] / %GRD$DY%]] * %GRD$DY%]
+	&DO row = 1 &TO [SQRT %numOfTiles%]
+		&DO col = 1 &TO [SQRT %numOfTiles%]
+			SETCELL topS1C1
+			&SETVAR thisXmin = [CALC %fullXmin% - %thisXOverlap% + %tileWidth% * ( %col% - 1 )]
+			&SETVAR thisXmax = [CALC %fullXmin% + %thisXOverlap% + %tileWidth% * %col%]
+			&SETVAR thisYmin = [CALC %fullYmin% - %thisYOverlap% + %tileHeight% * ( %row% - 1 )]
+			&SETVAR thisYmax = [CALC %fullYmin% + %thisYOverlap% + %tileHeight% * %row%]
+			&IF %thisXmin% < %fullXmin% &THEN &SETVAR thisXmin = %fullXmin%
+			&IF %thisXmax% > %fullXmax% &THEN &SETVAR thisXmax = %fullXmax%
+			&IF %thisYmin% < %fullYmin% &THEN &SETVAR thisYmin = %fullYmin%
+			&IF %thisYmax% > %fullYmax% &THEN &SETVAR thisYmax = %fullYmax%
+			SETWINDOW %thisXmin% %thisYmin% %thisXmax% %thisYmax%
+			outY%row%X%col%_S1C1 = CON (topS1C1 == %col1% && topS1C2 == %col2% && topS1C3 == %col3%, bgS1C1, topS1C1)
+			outY%row%X%col%_S1C2 = CON (topS1C1 == %col1% && topS1C2 == %col2% && topS1C3 == %col3%, bgS1C2, topS1C2)
+			outY%row%X%col%_S1C3 = CON (topS1C1 == %col1% && topS1C2 == %col2% && topS1C3 == %col3%, bgS1C3, topS1C3)
+			MAKESTACK outY%row%X%col%_s1 LIST OutY%row%X%col%_S1C1 OutY%row%X%col%_S1C2 OutY%row%X%col%_S1C3 
+			&SYSTEM rm ../%outImage%Y%row%X%col%.tif
+			&SYSTEM rm ../%outImage%Y%row%X%col%.tfw
+			ARC GRIDIMAGE OutY%row%X%col%_S1 # ../%outImage%Y%row%X%col% TIF compression
+		&END
+	&END
+QUIT
+
+/* ACTUAL CODE ENDS HERE ----------------------------
+
+/* {{{ SUB-ROUTINES
+/* }}} 
+
+/* {{{ STANDARD SUB ROUTINES
+
+	/* {{{ CLEANUP (PROPER EXIT)
+	&CALL niceclose
+	&RETURN
+	/* }}} 
+
+	/* {{{ USAGE
+	&LABEL USAGE
+		&CALL niceclose
+		&TYPE
+		&TYPE USAGE
+		&TYPE %Usage%
+		&TYPE
+	&RETURN
+	/* }}} 
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&WATCH &OFF
+	&MESSAGES &ON
+	&WATCH &OFF
+	&SYSTEM timer stop
+	&SEVERITY &ERROR &FAIL
+	&IF %:program% = PROJECT &THEN end
+	&IF %:program% <> ARC &THEN quit
+	&IF %:program% <> ARC &THEN quit
+	&IF %:program% <> ARC &THEN quit
+	layer remove inLayer
+	layer remove bound
+	dataset disconnect connUtnes
+	w ..
+	&ECHO &OFF
+	&MESSAGES &ON
+	&RETURN
+	/* Done!
+	/*}}}*/
+
+	/* {{{ BAILOUT / ERROR HANDLING
+	/* In case of error, make sure that the env. is reset
+	&ROUTINE bailout
+	&CALL niceclose
+	&TYPE
+	&TYPE
+	&TYPE
+	&RETURN &ERROR Bailing out of AML
+	/* end error handling
+	/* /* }}} 
+
+/*}}}*/
+

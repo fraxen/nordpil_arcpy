@@ -1,0 +1,134 @@
+/* {{{ COMMENTS
+/* index2rgb.aml
+/* Hugo Ahlenius, UNEP/GRID-ARendal
+/* Last Modified: 2004-Feb-11 12:16 (HA)
+/*
+/* I convert an indexed image to RGB -- three band stack
+/*
+/* HISTORY
+/* 2004-Jan-16 -- Created this file(HA)
+/* 2004-Feb-11 -- Added a check if grid exists, then kill(HA)
+/* }}} 
+
+&ARGS inGrid outStack colorFile doDebug
+&SETVAR thisFile = [BEFORE %AML$FILE% '.aml']
+&SETVAR Usage = USAGE index2rgb inGrid outStack colorFile  (Also needed - color file with the same name as inGrid, with the extension .color = inGrid.color, unless it is specified explicitly)
+&SETVAR useTempWS = .FALSE.
+
+/* {{{ DEBUG ARGS
+	&IF NOT [NULL %doDebug%] &THEN &ECHO &ON
+/* }}} 
+
+/* {{{ STANDARD BLOCK
+	&SEVERITY &ERROR &ROUTINE bailout
+	&SETVAR doCW = .TRUE.
+	&SETVAR hasWindows = .FALSE.
+	&IF "[BEFORE [SHOW &OS] ,]" eq "Windows_NT" &THEN &SETVAR hasWindows = .TRUE.
+	&IF %hasWindows% &THEN &DO
+		&WATCH %TEMP%\%thisFile%.log
+		&AMLPATH %home%/aml
+		&ATOOL %home%/aml
+		&SETVAR dirchar = \
+		&END 
+	&ELSE &DO
+		&WATCH %TEMP%/%thisFile%.log
+		&AMLPATH ~/aml
+		&ATOOL ~/aml
+		&SETVAR dirchar = /
+	&END
+	&PT &ON
+	&SYSTEM timer start
+	dataset disconnect connUtnes
+
+
+	/* {{{ CREATE WS
+	&IF %useTempWS% &THEN &DO
+		&IF %doCW% &THEN &DO /* If run with debug args
+			&if [EXISTS tempws_%thisFile% -workspace] &THEN rm -r -f tempws_%thisFile%
+			cw tempws_%thisFile%
+		&END
+		w tempws_%thisFile%
+	&END
+	/* }}} 
+/* }}}
+
+/* {{{ SETUP WORK ENVIRONMENT
+	&IF [SHOW program] ne GRID &THEN &GOTO USAGE
+	&IF [NULL %inGrid%] &THEN &GOTO USAGE
+	&IF NOT [EXISTS %inGrid% -grid] &THEN &GOTO USAGE
+	&IF [NULL %outStack%] &THEN &SETVAR outStack = outImage
+	&IF [NULL %colorFile%] | "%colorFile%" eq "#" &THEN &SETVAR colorFile = %colorFile%
+	&IF NOT [EXISTS %colorFile% -file] &THEN &GOTO USAGE
+/* }}} 
+
+/* ACTUAL CODE STARTS HERE ----------------------------
+
+SETWINDOW %inGrid%
+SETCELL %inGrid%
+
+&SYSTEM del %inGrid%C1.color
+&SYSTEM del %inGrid%C2.color
+&SYSTEM del %inGrid%C3.color
+&SYSTEM cat %colorFile% | sed "s/ #.*//" | sed "s/ \+$//" | sed "s/\(.*\) \(.*\) \(.*\) \(.*\)/\1: \2/" | tee %inGrid%C1.color
+&SYSTEM cat %colorFile% | sed "s/ #.*//" | sed "s/ \+$//" | sed "s/\(.*\) \(.*\) \(.*\) \(.*\)/\1: \3/" | tee %inGrid%C2.color
+&SYSTEM cat %colorFile% | sed "s/ #.*//" | sed "s/ \+$//" | sed "s/\(.*\) \(.*\) \(.*\) \(.*\)/\1: \4/" | tee %inGrid%C3.color
+&IF [EXISTS %outStack%C1 -grid] &THEN kill %outStack%C1
+&IF [EXISTS %outStack%C2 -grid] &THEN kill %outStack%C2
+&IF [EXISTS %outStack%C3 -grid] &THEN kill %outStack%C3
+%outStack%C1 = RECLASS (%inGrid%, %inGrid%C1.color)
+%outStack%C2 = RECLASS (%inGrid%, %inGrid%C2.color)
+%outStack%C3 = RECLASS (%inGrid%, %inGrid%C3.color)
+MAKESTACK %outStack% LIST %outStack%C1 %outStack%C2 %outStack%C3
+
+/* ACTUAL CODE ENDS HERE ----------------------------
+
+/* {{{ SUB-ROUTINES
+/* }}} 
+
+/* {{{ STANDARD SUB ROUTINES
+
+	/* {{{ CLEANUP (PROPER EXIT)
+	&CALL niceclose
+	&RETURN
+	/* }}} 
+
+	/* {{{ USAGE
+	&LABEL USAGE
+		&CALL niceclose
+		&TYPE
+		&TYPE USAGE
+		&TYPE %Usage%
+	&RETURN
+	/* }}} 
+
+	/* Finish it off nicely/*{{{*/
+	&ROUTINE niceclose
+	&WATCH &OFF
+	&MESSAGES &ON
+	&WATCH &OFF
+	&SYSTEM timer stop
+	&SEVERITY &ERROR &FAIL
+	&IF %:program% = PROJECT &THEN end
+	layer remove inLayer
+	layer remove bound
+	dataset disconnect connUtnes
+	&IF %useTempWS% &THEN w ..
+	&ECHO &OFF
+	&MESSAGES &ON
+	&RETURN
+	/* Done!
+	/*}}}*/
+
+	/* {{{ BAILOUT / ERROR HANDLING
+	/* In case of error, make sure that the env. is reset
+	&ROUTINE bailout
+	&CALL niceclose
+	&TYPE
+	&TYPE
+	&TYPE
+	&RETURN &ERROR Bailing out of AML
+	/* end error handling
+	/* /* }}} 
+
+/*}}}*/
+

@@ -1,0 +1,35 @@
+7
+/* ---------------------------------------------------------------------------
+/*          JOINCOVERS - Geomatics Senior Project - University of Florida
+/* ---------------------------------------------------------------------------
+/*    Menu: JCOVS4.MENU
+/* Purpose: jcovs4 tool interface.
+/* ---------------------------------------------------------------------------
+/* History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/* ===========================================================================
+    Select topology processing options.
+
+      %c3   ^Delete MSK files
+      %c4   ^Update preliminary topology
+      %c5   ^Clean coverages with intersecting arcs
+      %c2   ^Clean all coverages:       %choice0
+
+
+            Dangle:  %edi1      ^Fuzzy:  %edi0       %button0
+
+
+
+
+    %cancel1                         %butto3     %butt4
+%c3 CHECKBOX .jcovs4$mskflag INITIAL .TRUE. HELP 'Delete all MSK.adf files in all coverages'
+%c4 CHECKBOX .jcovs4$buildflag INITIAL .FALSE. HELP 'Build coverages with preliminary topology'
+%c5 CHECKBOX .jcovs4$intflag KEEP INITIAL .FALSE. HELP 'Clean coverages with intersections (INTERSECTERR)' RETURN '&run jcovs4 UPDATE'
+%c2 CHECKBOX .jcovs4$cleanflag INITIAL .FALSE. HELP 'Clean all coverages with tolerances below'
+%choice0 CHOICE .jcovs4$cleantype SINGLE KEEP INITIAL LINE HELP 'Select Clean type' LINE POLY
+%edi0 INPUT .JCOVS4$FUZZY 6 TYPEIN YES SCROLL NO SIZE 1024 INITIAL '.001' HELP 'Fuzzy tolerance used for clean' REAL
+%edi1 INPUT .JCOVS4$DANGLE 6 TYPEIN YES SCROLL NO SIZE 1024 INITIAL '.001' HELP 'Dangle tolerance used for clean' REAL
+%button0 BUTTON KEEP HELP 'Query first cover for tolerances' 'Default' &r jcovs4 DEFAULT
+%cancel1 BUTTON CANCEL HELP 'Cancel the JoinCovers Wizard' 'Cancel' &run jcovs4 CANCEL
+%butto3 BUTTON KEEP HELP 'Return to Step 3' '<< Back' &run jcovs4 BACK
+%butt4 BUTTON KEEP HELP 'Go to Step 5' 'Next >>' &run jcovs4 NEXT
+%FORMOPT NEXTFIELD ADVANCE MESSAGEVARIABLE .jcovs4$msg SETVARIABLES IMMEDIATE

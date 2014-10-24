@@ -1,0 +1,140 @@
+/*--------------------------------------------------------------------------
+/*            JOINCOVERS - Geomatics Senior Project - University of Florida
+/*--------------------------------------------------------------------------
+/*   Program: ADD_ITEMS.AML
+/*   Purpose: Add items listed in a text file to an info file.
+/*
+/*--------------------------------------------------------------------------
+/*     Usage: ADD_ITEMS INIT <info_file> <items_file> {out_info_file} 
+/*
+/* Arguments:     info_file - existing table
+/*               items_file - ASCII text list of items and definitions in
+/*                            the form:  itemname x,x,x,x
+/*                            (use find_items.aml {out_definition_file})
+/*                            example text file records:
+/*                              pin 4,5,i,0
+/*                              zone 3,3,c,0
+/*                              year 4,5,b,0 
+/*                              etc...
+/*            out_info_file - original table not modified
+/* 
+/*  Routines:    INIT - check args, set up loop structure
+/*               LOOP - copy the current cover to workspace, called by 
+/*                      file_loop_aml for every cover/record in file.
+/*              USAGE - return tool usage.
+/*               EXIT - cleanup and exit tool.
+/*            BAILOUT - error handling. 
+/*  
+/*   Globals: .add_items$*
+/*--------------------------------------------------------------------------
+/*     Calls: file_loop_aml.aml
+/*--------------------------------------------------------------------------
+/*     Notes: Item list must be in form 'itemname x,x,x,x' (from ITEMINFO)
+/*--------------------------------------------------------------------------
+/*   History: Sam Henderson -  Nov 98 - Feb 99  - Original coding 
+/*==========================================================================
+/*
+&args routine arglist:rest
+/*
+&severity &error &routine bailout
+/*
+/* Check arguments 
+&if ^ [null %routine%] &then
+  &call %routine%
+&else
+  &call usage
+&return
+
+/*-----------
+&routine INIT
+/*-----------
+/* Set up loop structure.
+
+/* Check program
+&if [show program] ne ARC &then
+  &return Run [before %AML$FILE% .aml] from ARC.
+
+/* Extract args.
+&s infofile = [extract 1 [unquote %arglist%]]
+&s itemsfile = [extract 2 [unquote %arglist%]]
+&s outinfo = [extract 3 [unquote %arglist%]]
+
+&if [null %infofile%] or [null %itemsfile%] &then
+  &call usage
+  
+/* Make sure table list exists.
+&if not [exists %infofile% -info] &then
+  &return Input table %infofile% not found.
+
+/* Make sure file list exists.
+&if not [exists %itemsfile% -file] &then 
+  &return Input file %itemsfile% not found.
+
+/* Verify output info file does not exist.
+&if not [null %outinfo%] &then &do
+  &if [exists %outinfo% -info] &then
+    &return Output table %outinfo% already exists.
+&end
+
+&s .add_items$target %infofile%
+&if not [null %outinfo%] &then &do
+  copyinfo %infofile% %outinfo%
+  &s .add_items$target %outinfo%
+&end
+
+/* Loop through each record/item and add if needed/possible.
+&run file_loop_aml %itemsfile% [quote add_items LOOP] .add_items$record
+
+&call EXIT
+
+&return
+
+/*-----------
+&routine LOOP
+/*-----------
+/* Check current cover/record for existence.
+&s name = [before %.add_items$record% ' ']
+&if not [iteminfo %.add_items$target% -info %name% -exists] &then
+  additem %.add_items$target% %.add_items$target% ~
+   [unquote %.add_items$record%]
+&else &do /* Item already exists (name matches)
+  &s filedef = [upcase [after %.add_items$record% ' ']]
+  &s existingdef = [upcase [iteminfo %.add_items$target% -info ~
+   [before %.add_items$record% ' ']]]
+  &if %existingdef% ne %filedef% &then &do
+    &type  The item [before %.add_items$record% ' '] ~
+already exists in %.add_items$target%
+    &type  and is defined differently:
+    &type    Existing item:  %existingdef%
+    &type        File item:      %filedef%
+    &type  Ignoring... 
+  &end
+  &else  
+&end
+
+&return
+
+/*------------
+&routine USAGE
+/*------------
+/* Display usage for this tool
+&type Usage: ADD_ITEMS INIT <info_file> <items_file> {out_info_file} 
+&return &inform 
+
+/*-----------
+&routine EXIT
+/*-----------
+/* Clean up and exit menu
+&dv .[before %AML$FILE% .aml]$*
+&do file &list [listfile xx*[before %AML$FILE% .aml] -file]
+  &s delstat = [delete %file%]
+&end
+&return &inform
+ 
+/*--------------
+&routine BAILOUT
+/*--------------
+&severity &error &ignore
+&call exit
+&return &warning An error has occurred in [before %AML$FILE% .aml].
+
