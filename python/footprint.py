@@ -1,82 +1,96 @@
 # -*- coding: UTF-8 -*-
-#---------------------------------------------------------------------------
-# This Python script will traverse through a workspace/folder of shapefiles
-# and inspect them in regards to attributes/fields. The list of fields will
-# are written to a spreadsheet with names and properties.
-#
-# This script has not been tested with other kinds of workspaces, e.g.
-# Geodatabases etc...
-#---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+#  This Python script creates a raster footprint featureclass
+# ---------------------------------------------------------------------------
 #   Name:          footprint
 #   Version:       1.0
 #   Authored by:   Hugo Ahlenius, Nordpil - http://nordpil.com
-#   
+#
 #   License:       Creative Commons Attribution 3.0 Unported License
-#---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 
-#Import modules
-import arcpy,sys,os,datetime
-arcpy.env.overwriteOutput = True
+import sys
+import arcpy
 
-# {{{ HANDLE PARAMETERS
-paramInRaster = arcpy.GetParameterAsText(0)
-paramOutShape = arcpy.GetParameterAsText(1)
-paramWorkspace = arcpy.GetParameterAsText(2)
 
-if len(paramWorkspace) == 0:
-	paramWorkspace = arcpy.env.workspace
+def main(inRaster, outPoly):
+    if not arcpy.Exists(inRaster):
+        arcpy.AddError('Input raster: %s does not exist' % inRaster)
+        raise StandardError
+    if outPoly is None:
+        outPoly = inRaster + '_fp'
 
-if arcpy.env.workspace is None or not os.path.isdir(paramWorkspace) or not arcpy.Exists(paramInRaster):
-	arcpy.AddError("Input parameters are incorrect\rfootprint.py (name of raster dataset) {optional name of output shapefile} {optional workspace path}\nIf workspace is not set in the environment, the workspace needs to be provided as an argument")
-	raise StandardError
+    # Get properties for the specified raster dataset
+    propsInRaster = arcpy.Describe(inRaster)
 
-paramOutFile = paramOutShape
-if len(paramOutShape) == 0:
-	# If no paramOutShape given, it suggests a new name...
-	paramOutFile = paramInRaster + '_footprint.shp'
-	if len(paramInRaster.split('/')[0].split('\\')[-1].split('.')) > 1:
-		paramOutFile = paramInRaster.split('.')[:-1][0] + '_footprint.shp'
-if not paramOutFile.split('.')[-1] == 'shp':
-	paramOutFile = paramOutFile + '.shp'
-# }}}
+    # {{{ Create a polygon for the featureList array
+    point = arcpy.Point()
+    array = arcpy.Array()
+    featureList = []
+    point.X = propsInRaster.extent.XMin
+    point.Y = propsInRaster.extent.YMin
+    array.add(point)
+    point.X = propsInRaster.extent.XMin
+    point.Y = propsInRaster.extent.YMax
+    array.add(point)
+    point.X = propsInRaster.extent.XMax
+    point.Y = propsInRaster.extent.YMax
+    array.add(point)
+    point.X = propsInRaster.extent.XMax
+    point.Y = propsInRaster.extent.YMin
+    array.add(point)
+    array.add(array.getObject(0))
+    polygon = arcpy.Polygon(array)
+    featureList.append(polygon)
+    # }}}
 
-# Get properties for the specified raster dataset
-propsInRaster = arcpy.Describe(paramInRaster)
+    arcpy.CopyFeatures_management(featureList, outPoly)
 
-# {{{ Create a polygon for the featureList array
-point = arcpy.Point()
-array = arcpy.Array()
-featureList = []
+    # Did we just create a shapefile?
+    if arcpy.Exists(outPoly + '.shp'):
+        outPoly = outPoly + '.shp'
+    arcpy.DefineProjection_management(outPoly, propsInRaster.spatialReference)
+    del featureList
+    del point
+    del array
+    del polygon
 
-point.X = propsInRaster.extent.XMin
-point.Y = propsInRaster.extent.YMin
-array.add(point)
+    arcpy.AddMessage('Created polygon fc %s from outline of %s' % (outPoly, inRaster))
 
-point.X = propsInRaster.extent.XMin
-point.Y = propsInRaster.extent.YMax
-array.add(point)
+    # Here I am trying to add it to current ArcMap pane,
+    # if run from the ArcMap python console/pane,
+    # but it doesn't seem to work... I guess it returns false here...
+    try:
+        mxd = arcpy.mapping.MapDocument("CURRENT")
+        df = arcpy.mapping.ListDataFrames(mxd, "*")[0]
+        outLayer = arcpy.mapping.Layer(outPoly)
+        arcpy.mapping.AddLayer(df, outLayer)
+    except:
+        pass
 
-point.X = propsInRaster.extent.XMax
-point.Y = propsInRaster.extent.YMax
-array.add(point)
+    return
 
-point.X = propsInRaster.extent.XMax
-point.Y = propsInRaster.extent.YMin
-array.add(point)
-array.add(array.getObject(0))
-polygon = arcpy.Polygon(array)
-featureList.append(polygon)
-# }}}
 
-arcpy.CopyFeatures_management(featureList,paramOutFile)
-arcpy.DefineProjection_management(paramOutFile,propsInRaster.spatialReference)
+if __name__ == '__main__':
+    if arcpy.GetParameterAsText(0):
+        arguments = tuple(
+            arcpy.GetParameterAsText(i) for i in range(arcpy.GetArgumentCount())
+        )
+    else:
+        arguments = sys.argv[1:]
 
-# Here I am trying to add it to current ArcMap pane, if run from the ArcMap python console/pane, but it doesn't seem to work... I guess it returns false here...
-isArcMap = True
-try:
-	thisMxd = arcpy.mapping.MapDocument("CURRENT")
-except:
-	isArcMap = False
-
-if isArcMap:
-	arcpy.MakeFeatureLayer_management (paramOutFile,paramOutFile.split('/')[0].split('\\')[-1].split('.')[:-1][0])
+    try:
+        inRaster = arguments[0]
+        try:
+            outPoly = arguments[1]
+        except IndexError:
+            outPoly = None
+    except Exception, e:
+            print 'footprint - creates polygon based on raster footprint'
+            print 'Usage: footprint.py <input raster> [output polygon features]'
+            print 'Can be run from the prompt, imported as module and run as a toolbox script'
+            print 'To run as a module:'
+            print '   import footprint'
+            print '   footprint.main(<input raster>,[output polygon features])'
+            sys.exit()
+    main(inRaster, outPoly)
