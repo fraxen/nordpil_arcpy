@@ -6,7 +6,7 @@ try:
     from arcpy.sa import *
     arcpy.env.overwriteOutput = True
     arcpy.CheckOutExtension("Spatial")
-    arcpy.ImportToolbox(r'C:\Users\hugo\aml\python\_Nordpil toolbox.tbx')
+    arcpy.ImportToolbox(r'C:\Users\hugoa\aml\python\Nordpil.tbx')
     arcpy.env.workspace = r'c:\data\ws'
     arcpy.env.scratchworkspace = r'f:\temp\scratch.gdb'
 except:
