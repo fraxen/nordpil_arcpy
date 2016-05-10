@@ -2,11 +2,10 @@
 import os
 try:
     import arcpy
-    from arcpy import env
     from arcpy.sa import *
     arcpy.env.overwriteOutput = True
     arcpy.CheckOutExtension("Spatial")
-    arcpy.ImportToolbox(r'C:\Users\hugoa\aml\python\Nordpil.tbx')
+    arcpy.ImportToolbox('C:/Users/hugoa/aml/python/Nordpil.tbx')
     arcpy.env.workspace = r'c:\data\ws'
     arcpy.env.scratchworkspace = r'f:\temp\scratch.gdb'
 except:
@@ -18,7 +17,6 @@ try:
 except:
     pass
 
-import time
 import subprocess
 
 
@@ -50,13 +48,13 @@ def gPing(msg, isArc=0):
             subprocess.call([
                 'cmd.exe', '/c', 'start', 'growlnotify.exe', '/p:2',
                 '/t:"ArcPy processing on ' + os.environ.get('COMPUTERNAME') + '"',
-                r'/ai:"c:\home\hugo\bin\icon_arcgis.png"', msg
+                r'/ai:"%s\bin\icon_arcgis.png"' % os.environ['HOME'], msg
             ])
         else:
             subprocess.call([
                 'cmd.exe', '/c', 'start', 'growlnotify.exe', '/p:2',
                 '/t:"Python processing on ' + os.environ.get('COMPUTERNAME') + '"',
-                r'/ai:"c:\home\hugo\bin\icon_python.png"', msg
+                r'/ai:"%s\bin\icon_python.png"' % os.environ['HOME'], msg
             ])
     except RuntimeError:
         print RuntimeError
