@@ -1,5 +1,8 @@
 # -*- coding: UTF-8 -*-
 import os
+import sys
+import re
+
 # Import fmeobjects
 try:
     sys.path.append(r'C:\Program Files\FME\fmeobjects\python27')
@@ -8,7 +11,7 @@ except:
 
 try:
     import arcpy
-    from arcpy.sa import *
+    from arcpy.sa import *  # noqa: F403,F401
     arcpy.env.overwriteOutput = True
     try:
         arcpy.CheckOutExtension('Spatial')
@@ -35,6 +38,39 @@ except:
     pass
 
 import subprocess
+
+
+def gotoXY(s):
+    s = re.sub(r'[^\d|^,|^.|^ |^\t]', '', s)  # trim any non number chars
+    s = s.strip()  # just plain strip
+    s = s.replace(',', '.')  # normalize to dot decimal separator
+    s = re.sub(r'(\.\d+)\s+', r'\1\t', s)  # separate the two pairs
+    s = s.split('\t')
+    s = [re.sub(r'[^\d|^.]', '', c.strip()) for c in s]  # now we have a coordinate pair
+    s = [float(c) for c in s]
+
+    df = curFrame()
+    newExtent = df.extent
+    newExtent.XMin, newExtent.YMin = s[0] - df.extent.width/2, s[1] - df.extent.height/2
+    newExtent.XMax, newExtent.YMax = s[0] + df.extent.width/2, s[1] + df.extent.height/2
+    df.extent = newExtent
+
+    arcpy.RefreshActiveView()
+
+
+def fixSde():
+    for l in arcpy.mapping.ListLayers(curDoc()):
+        if hasattr(l, 'dataSource') and l.dataSource != '' and l.workspacePath[-4:] == '.sde':
+            oldStage = l.dataSource.split(u'\\')[1][3:4]
+            newStage = int(oldStage) + 1
+            if newStage == 7:
+                newStage = 1
+            newWs = l.workspacePath.replace('sde%s' % str(oldStage), 'sde%s' % str(newStage))
+            l.replaceDataSource(
+                newWs,
+                'SDE_WORKSPACE',
+                l.datasetName
+            )
 
 
 def is_number(s):
@@ -126,6 +162,7 @@ def ExtentToFeatureclass(fcName):
     arcpy.CopyFeatures_management(box, fcName)
 
     return 'Prepared extent to fc: ' + fcName
+
 
 try:
     import pyreadline.rlmain
