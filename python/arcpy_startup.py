@@ -4,8 +4,11 @@ try:
     import arcpy
     from arcpy.sa import *
     arcpy.env.overwriteOutput = True
-    arcpy.CheckOutExtension("Spatial")
     arcpy.ImportToolbox('C:/Users/hugoa/aml/python/Nordpil.tbx')
+    try:
+        arcpy.CheckOutExtension('Spatial')
+    except:
+        pass
     arcpy.env.workspace = r'c:\data\ws'
     arcpy.env.scratchworkspace = r'f:\temp\scratch.gdb'
 except:
