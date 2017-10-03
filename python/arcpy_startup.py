@@ -22,6 +22,9 @@ try:
     )
     arcpy.env.workspace = r'c:\data\ws'
     arcpy.env.scratchworkspace = r'f:\temp\scratch.gdb'
+    if os.environ.get('COMPUTERNAME').lower() == '5CD7232N5D80F9':
+        arcpy.env.workspace = r'c:\project\work'
+        arcpy.env.scratchworkspace = r'c:\project\work\scratch.gdb'
 except:
     print 'arcpy not installed'
 
