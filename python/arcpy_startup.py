@@ -1,5 +1,11 @@
 # -*- coding: UTF-8 -*-
 import os
+# Import fmeobjects
+try:
+    sys.path.append(r'C:\Program Files\FME\fmeobjects\python27')
+except:
+    print 'no fme'
+
 try:
     import arcpy
     from arcpy.sa import *
