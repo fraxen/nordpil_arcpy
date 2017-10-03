@@ -48,7 +48,7 @@ def is_number(s):
 def wcd(newDir):
     # Uses wcd to change directory
     subprocess.call([
-        'c:/winbin/wcd/wcdwin32.exe', '-i', '-w', newDir
+        'c:/winbin/wcd/wcdwin64.exe', '-i', '-w', newDir
     ])
     thisDir = ''
     with open(os.path.join(os.environ['WCDHOME'], 'wcdgo.bat'), 'r') as wcdFile:
