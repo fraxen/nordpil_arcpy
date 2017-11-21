@@ -61,7 +61,7 @@ def gotoXY(s):
 def fixSde():
     for l in arcpy.mapping.ListLayers(curDoc()):
         if hasattr(l, 'dataSource') and l.dataSource != '' and l.workspacePath[-4:] == '.sde':
-            oldStage = l.dataSource.split(u'\\')[1][3:4]
+            oldStage = l.dataSource.split(u'\\')[1][11:12]
             newStage = int(oldStage) + 1
             if newStage == 7:
                 newStage = 1
