@@ -2,12 +2,11 @@
 import os
 import sys
 import re
+import subprocess
 
 # Import fmeobjects
-try:
+if os.path.exists(r'C:\Program Files\FME\fmeobjects\python27'):
     sys.path.append(r'C:\Program Files\FME\fmeobjects\python27')
-except:
-    print 'no fme'
 
 try:
     import arcpy
@@ -15,7 +14,7 @@ try:
     arcpy.env.overwriteOutput = True
     try:
         arcpy.CheckOutExtension('Spatial')
-    except:
+    except Exception:
         pass
     arcpy.ImportToolbox(
         os.path.join(
@@ -28,16 +27,14 @@ try:
     if os.environ.get('COMPUTERNAME').lower() == '5CD7232N5D80F9':
         arcpy.env.workspace = r'c:\project\work'
         arcpy.env.scratchworkspace = r'c:\project\work\scratch.gdb'
-except:
+except Exception:
     print 'arcpy not installed'
 
 try:
     # import numpy
     pass
-except:
+except Exception:
     pass
-
-import subprocess
 
 
 def gotoXY(s):
@@ -51,11 +48,25 @@ def gotoXY(s):
 
     df = curFrame()
     newExtent = df.extent
-    newExtent.XMin, newExtent.YMin = s[0] - df.extent.width/2, s[1] - df.extent.height/2
-    newExtent.XMax, newExtent.YMax = s[0] + df.extent.width/2, s[1] + df.extent.height/2
+    newExtent.XMin, newExtent.YMin = s[0] - df.extent.width / 2, s[1] - df.extent.height / 2
+    newExtent.XMax, newExtent.YMax = s[0] + df.extent.width / 2, s[1] + df.extent.height / 2
     df.extent = newExtent
 
     arcpy.RefreshActiveView()
+
+
+def switchSDE():
+    for l in arcpy.mapping.ListLayers(curDoc()):
+        if hasattr(l, 'dataSource') and l.dataSource != '' and l.workspacePath[-4:] == '.sde':
+            if l.workspacePath.find('owstage') != -1:
+                newWs = l.workspacePath.replace('owstage', 'dlstage')
+            else:
+                newWs = l.workspacePath.replace('dlstage', 'owstage')
+            l.replaceDataSource(
+                newWs,
+                'SDE_WORKSPACE',
+                l.datasetName
+            )
 
 
 def fixSde():
@@ -91,7 +102,7 @@ def wcd(newDir):
         try:
             thisDir = [x for x in wcdFile.readlines() if x[0:3] == 'cd '][0].split('"')[1]
             os.chdir(thisDir)
-        except:
+        except Exception:
             return False
 
 
@@ -126,7 +137,7 @@ def isArcMap():
     try:
         arcpy.mapping.MapDocument("CURRENT")
         return True
-    except:
+    except Exception:
         return False
 
 
