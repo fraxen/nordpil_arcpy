@@ -55,13 +55,23 @@ def gotoXY(s):
     arcpy.RefreshActiveView()
 
 
-def switchSDE():
+def switchSDE(toStage):
+    if toStage == 'ow':
+        toStage = 'owstage'
+    elif toStage == 'dl':
+        toStage = 'dlstage'
+
     for l in arcpy.mapping.ListLayers(curDoc()):
         if hasattr(l, 'dataSource') and l.dataSource != '' and l.workspacePath[-4:] == '.sde':
-            if l.workspacePath.find('owstage') != -1:
-                newWs = l.workspacePath.replace('owstage', 'dlstage')
+            if toStage is None:
+                if l.workspacePath.find('owstage') != -1:
+                    newWs = l.workspacePath.replace('owstage', 'dlstage')
+                else:
+                    newWs = l.workspacePath.replace('dlstage', 'owstage')
             else:
-                newWs = l.workspacePath.replace('dlstage', 'owstage')
+                newWs = l.workspacePath.replace('owstage', toStage)
+                newWs = newWs.replace('dlstage', toStage)
+            print('Updating %s to %s' % (l.name, newWs))
             l.replaceDataSource(
                 newWs,
                 'SDE_WORKSPACE',
@@ -77,6 +87,7 @@ def fixSde():
             if newStage == 7:
                 newStage = 1
             newWs = l.workspacePath.replace('sde%s' % str(oldStage), 'sde%s' % str(newStage))
+            print('Updating %s to %s' % (l.name, newWs))
             l.replaceDataSource(
                 newWs,
                 'SDE_WORKSPACE',
