@@ -36,6 +36,10 @@ try:
 except Exception:
     pass
 
+def curCenter():
+    e = curExtent()
+    print 'N = %s  -- E = %s' % (int(e.YMin + e.height/2), int(e.XMin + e.width/2))
+
 
 def gotoXY(s):
     s = re.sub(r'[^\d|^,|^.|^ |^\t]', '', s)  # trim any non number chars
