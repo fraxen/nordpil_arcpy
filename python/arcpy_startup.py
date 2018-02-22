@@ -130,15 +130,22 @@ def gPing(msg, isArc=0):
                 r'/ai:"%s\bin\icon_arcgis.png"' % os.environ['HOME'], msg
             ])
         else:
-            subprocess.call([
-                'cmd.exe', '/c', 'start', 'growlnotify.exe', '/p:2',
-                '/t:"Python processing on ' + os.environ.get('COMPUTERNAME') + '"',
-                r'/ai:"%s\bin\icon_python.png"' % os.environ['HOME'], msg
-            ])
+            if 'fmeobjects' in sys.modules or 'fme' in sys.modules:
+                subprocess.call([
+                    'cmd.exe', '/c', 'start', 'growlnotify.exe', '/p:2',
+                    '/t:"FME processing on ' + os.environ.get('COMPUTERNAME') + '"',
+                    r'/ai:"%s\bin\icon_fme.png"' % os.environ['HOME'], msg
+                ])
+            else:
+                subprocess.call([
+                    'cmd.exe', '/c', 'start', 'growlnotify.exe', '/p:2',
+                    '/t:"Python processing on ' + os.environ.get('COMPUTERNAME') + '"',
+                    r'/ai:"%s\bin\icon_python.png"' % os.environ['HOME'], msg
+                ])
     except RuntimeError:
-        print RuntimeError
-        print('[UNABLE TO LAUNCH GROWLNOTIFY]\n\n' + msg)
-
+        subprocess.call([
+            'msg.exe', os.environ['USERNAME'], msg
+        ])
 
 def curExtent():
     return arcpy.mapping.ListDataFrames(arcpy.mapping.MapDocument("CURRENT"))[0].extent
