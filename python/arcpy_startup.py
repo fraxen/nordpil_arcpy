@@ -87,20 +87,29 @@ def switchSDE(toStage):
 
     for l in arcpy.mapping.ListLayers(curDoc()):
         if hasattr(l, 'dataSource') and l.dataSource != '' and l.workspacePath[-4:] == '.sde':
-            if toStage is None:
-                if l.workspacePath.find('owstage') != -1:
-                    newWs = l.workspacePath.replace('owstage', 'dlstage')
+            try:
+                if toStage is None:
+                    if l.workspacePath.find('owstage') != -1:
+                        newWs = l.workspacePath.replace('owstage', 'dlstage')
+                    else:
+                        newWs = l.workspacePath.replace('dlstage', 'owstage')
                 else:
-                    newWs = l.workspacePath.replace('dlstage', 'owstage')
-            else:
-                newWs = l.workspacePath.replace('owstage', toStage)
-                newWs = newWs.replace('dlstage', toStage)
-            print('Updating %s to %s' % (l.name, newWs))
-            l.replaceDataSource(
-                newWs,
-                'SDE_WORKSPACE',
-                l.datasetName
-            )
+                    newWs = l.workspacePath.replace('owstage', toStage)
+                    newWs = newWs.replace('dlstage', toStage)
+                print('Updating %s to %s' % (l.name, newWs))
+                l.replaceDataSource(
+                    newWs,
+                    'SDE_WORKSPACE',
+                    l.datasetName
+                )
+                if re.search('\w\wstage', l.name, re.IGNORECASE):
+                    l.name = re.sub('\w\wstage', toStage, l.name, flags=re.IGNORECASE)
+                else:
+                    l.name = toStage + ' ' + l.name
+            except Exception:
+                print('FAILED UPDATING %s to %s' % (l.name, newWs))
+                print Exception
+                print sys.exc_info()
 
 
 def fixSde():
@@ -166,6 +175,7 @@ def gPing(msg, isArc=0):
         subprocess.call([
             'msg.exe', os.environ['USERNAME'], msg
         ])
+
 
 def curExtent():
     return arcpy.mapping.ListDataFrames(arcpy.mapping.MapDocument("CURRENT"))[0].extent
