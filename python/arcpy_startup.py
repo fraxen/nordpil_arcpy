@@ -36,20 +36,30 @@ try:
 except Exception:
     pass
 
+
 def curCenter():
     e = curExtent()
-    print 'N = %s  -- E = %s' % (int(e.YMin + e.height/2), int(e.XMin + e.width/2))
+    print 'N = %s  -- E = %s' % (int(e.YMin + e.height / 2), int(e.XMin + e.width / 2))
 
 
 def gotoXY(s):
-    s = re.sub(r'[^\d|^,|^.|^ |^\t]', '', s)  # trim any non number chars
-    s = s.strip()  # just plain strip
-    s = s.replace(',', '.')  # normalize to dot decimal separator
-    s = re.sub(r'(\.\d+)\s+', r'\1\t', s)  # separate the two pairs
-    s = s.split('\t')
-    s = [re.sub(r'[^\d|^.]', '', c.strip()) for c in s]  # now we have a coordinate pair
-    s = [float(c) for c in s]
+    if type(s) is list and len(s) == 2:
+        if not(type(s) is float):
+            s = [float(c) for c in s]
+    else:
+        s = re.sub(r'[^\d|^,|^.|^ |^\t]', '', s)  # trim any non number chars
+        if re.search('\t', s):
+            s = s.split('\t')
+        elif re.subn(',', '', s)[1] == 1:
+            s = s.split(',')
+        else:
+            s = s.split(' ')
+        s = [c.strip() for c in s]  # just plain strip
+        s = [c.replace(',', '.') for c in s]  # normalize to dot decimal separator
+        s = [c.replace(' ', '') for c in s]  # remove spaces
+        s = [float(c) for c in s]
 
+    print s
     df = curFrame()
     newExtent = df.extent
     newExtent.XMin, newExtent.YMin = s[0] - df.extent.width / 2, s[1] - df.extent.height / 2
