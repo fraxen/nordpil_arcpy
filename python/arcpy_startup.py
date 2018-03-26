@@ -77,6 +77,7 @@ def updateNames():
                 l.name = '{} {}'.format(l.datasetName.split('.')[0].upper(), l.name)
             if l.name.lower().find(stage) == -1:
                 l.name = '{} {}'.format(stage, l.name)
+    arcpy.RefreshTOC()
 
 
 def switchSDE(toStage):
@@ -126,6 +127,7 @@ def fixSde():
                 'SDE_WORKSPACE',
                 l.datasetName
             )
+    arcpy.RefreshTOC()
 
 
 def is_number(s):
