@@ -77,17 +77,26 @@ def gotoXY(s):
         if not(type(s) is float):
             s = [float(c) for c in s]
     else:
-        s = re.sub(r'[^\d|^,|^.|^ |^\t]', '', s)  # trim any non number chars
-        if re.search('\t', s):
-            s = s.split('\t')
-        elif re.subn(',', '', s)[1] == 1:
-            s = s.split(',')
+        s = re.sub(r'[^\x00-\x7f]+', '  ', s)
+        if s.find('  ') > -1:
+            s = s.replace('Meters', '')
+            s = s.replace('meters', '')
+            s = s.split('  ')
+            s = [c.replace(',', '.') for c in s]
+            s = [c.replace(' ', '') for c in s]
+            s = [float(c) for c in s]
         else:
-            s = s.split(' ')
-        s = [c.strip() for c in s]  # just plain strip
-        s = [c.replace(',', '.') for c in s]  # normalize to dot decimal separator
-        s = [c.replace(' ', '') for c in s]  # remove spaces
-        s = [float(c) for c in s]
+            s = re.sub(r'[^\d|^,|^.|^ |^\t]', '', s)  # trim any non number chars
+            if re.search('\t', s):
+                s = s.split('\t')
+            elif re.subn(',', '', s)[1] == 1:
+                s = s.split(',')
+            else:
+                s = s.split(' ')
+            s = [c.strip() for c in s]  # just plain strip
+            s = [c.replace(',', '.') for c in s]  # normalize to dot decimal separator
+            s = [c.replace(' ', '') for c in s]  # remove spaces
+            s = [float(c) for c in s]
 
     print s
     df = curFrame()
