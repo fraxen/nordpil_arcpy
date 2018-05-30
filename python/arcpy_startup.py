@@ -40,6 +40,33 @@ def curCenterCoord():
     e = curExtent()
     return [int(e.XMin + e.width / 2), int(e.YMin + e.height / 2)]
 
+
+def lnsspan():
+    xy = curCenterCoord()
+    xy = [float(c) / 100 for c in xy]
+    height = curExtent().YMax - curExtent().YMin
+    if height < 250:
+        zoom = 5
+    elif height < 320:
+        zoom = 4
+    elif height < 577:
+        zoom = 3
+    elif height < 1800:
+        zoom = 2
+    else:
+        zoom = 1
+
+    subprocess.call([
+        r'C:\Program Files\Mozilla Firefox\firefox.exe',
+        (
+            'https://span.skanova.se/span/api/content/span-web/lns.html',
+            '#template=undefined&zoom={}&'.format(zoom),
+            'lon={}&lat={}'.format(*xy),
+            '&layers=BTTTTTTTTTTTTTTTTTTTTFFFFFFFFFFTTTTTT',
+        )
+    ])
+
+
 def curCenter():
     xy = curCenterCoord()
     print 'N = %s  -- E = %s' % (xy[1], xy[0])
