@@ -112,6 +112,7 @@ def updateNames():
     for l in arcpy.mapping.ListLayers(curDoc()):
         if hasattr(l, 'dataSource') and l.dataSource != '' and l.workspacePath[-4:] == '.sde':
             stage = [f for f in l.dataSource.split('\\') if f.lower().find('stage') > -1][0].split('@')[0].lower()
+            l.name = re.sub('(?i)..stage', '', l.name).strip()
             if l.name.lower().find(l.datasetName.split('.')[0].lower()) == -1:
                 l.name = '{} {}'.format(l.datasetName.split('.')[0].upper(), l.name)
             if l.name.lower().find(stage) == -1:
@@ -151,6 +152,7 @@ def switchSDE(toStage):
                 print('FAILED UPDATING %s to %s' % (l.name, newWs))
                 print Exception
                 print sys.exc_info()
+    updateNames()
 
 
 def fixSde():
