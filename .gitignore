@@ -1,4 +1,4 @@
-# Byte-compiled / optimized / DLL files
+adf# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 
@@ -54,3 +54,5 @@ docs/_build/
 target/
 
 python/__init__.py
+
+python/arc_utils

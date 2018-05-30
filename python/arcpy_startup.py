@@ -9,6 +9,11 @@ if os.path.exists(r'C:\Program Files\FME\fmeobjects\python27'):
     sys.path.append(r'C:\Program Files\FME\fmeobjects\python27')
 
 try:
+    import arc_utils
+except Exception:
+    pass
+
+try:
     import arcpy
     from arcpy.sa import *  # noqa: F403,F401
     arcpy.env.overwriteOutput = True
@@ -30,11 +35,6 @@ try:
 except Exception:
     print 'arcpy not installed'
 
-try:
-    # import numpy
-    pass
-except Exception:
-    pass
 
 
 def curCenter():
