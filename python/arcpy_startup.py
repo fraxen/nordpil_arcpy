@@ -120,6 +120,7 @@ def updateNames():
 
 
 def switchSDE(toStage):
+    toStage = toStage.lower()
     if toStage == 'ow':
         toStage = 'owstage'
     elif toStage == 'dl':
@@ -130,12 +131,12 @@ def switchSDE(toStage):
             try:
                 if toStage is None:
                     if l.workspacePath.find('owstage') != -1:
-                        newWs = l.workspacePath.replace('owstage', 'dlstage')
+                        newWs = l.workspacePath.lower().replace('owstage', 'dlstage')
                     else:
-                        newWs = l.workspacePath.replace('dlstage', 'owstage')
+                        newWs = l.workspacePath.lower().replace('dlstage', 'owstage')
                 else:
-                    newWs = l.workspacePath.replace('owstage', toStage)
-                    newWs = newWs.replace('dlstage', toStage)
+                    newWs = l.workspacePath.lower().replace('owstage', toStage)
+                    newWs = newWs.lower().replace('dlstage', toStage)
                 print('Updating %s to %s' % (l.name, newWs))
                 l.replaceDataSource(
                     newWs,
