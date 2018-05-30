@@ -36,6 +36,9 @@ except Exception:
     print 'arcpy not installed'
 
 
+def curCenterCoord():
+    e = curExtent()
+    return [int(e.XMin + e.width / 2), int(e.YMin + e.height / 2)]
 
 def curCenter():
     e = curExtent()
