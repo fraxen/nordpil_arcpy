@@ -41,8 +41,8 @@ def curCenterCoord():
     return [int(e.XMin + e.width / 2), int(e.YMin + e.height / 2)]
 
 def curCenter():
-    e = curExtent()
-    print 'N = %s  -- E = %s' % (int(e.YMin + e.height / 2), int(e.XMin + e.width / 2))
+    xy = curCenterCoord()
+    print 'N = %s  -- E = %s' % (xy[1], xy[0])
 
 
 def gotoXY(s):
