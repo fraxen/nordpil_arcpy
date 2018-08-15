@@ -225,6 +225,24 @@ def curExtent():
     return arcpy.mapping.ListDataFrames(arcpy.mapping.MapDocument("CURRENT"))[0].extent
 
 
+def curExtentWkt():
+    e = curExtent()
+    return "sde.st_polygon ('polygon (({}))', {})".format(
+        '{} {}, {} {}, {} {}, {} {}, {} {}'.format(
+            e.XMax, e.YMin,
+            e.XMin, e.YMin,
+            e.XMin, e.YMax,
+            e.XMax, e.YMax,
+            e.XMax, e.YMin,
+        ),
+        curExtent().spatialReference.PCSCode
+    )
+
+
+def curExtentWktSql():
+    return "sde.st_within(SHAPE, {}) = 1".format(curExtentWkt())
+
+
 def curDoc():
     return arcpy.mapping.MapDocument("CURRENT")
 
